@@ -5,7 +5,7 @@ import { PublicUser, UserRole } from '@/entities/user/types';
 import { extractError } from '@/shared/api/http';
 import { t } from '@/shared/i18n/tj';
 import { Button } from '@/shared/ui/Button';
-import { Input, Select } from '@/shared/ui/Input';
+import { Input, PasswordInput, Select } from '@/shared/ui/Input';
 import { Modal } from '@/shared/ui/Modal';
 import { useToast } from '@/shared/ui/Toast';
 
@@ -76,9 +76,8 @@ export function UserFormModal({ user, points, onClose, onSaved }: Props) {
             required
             minLength={3}
           />
-          <Input
+          <PasswordInput
             label={t.users.password}
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder={user ? t.users.passwordHint : ''}

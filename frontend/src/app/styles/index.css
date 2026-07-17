@@ -609,6 +609,24 @@ table.table { width: 100%; border-collapse: collapse; }
 /* ═══ Настройки ═══ */
 .settings-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 .settings-grid > * { min-width: 0; }
+
+/* поле пароля с «глазком» */
+.password-wrap { position: relative; }
+.password-wrap .field-input { padding-right: 46px; }
+.password-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 10px;
+  display: flex;
+  border-radius: 8px;
+}
+.password-toggle:active { color: var(--ink); }
 .notif-message::first-line { font-weight: 700; }
 .howto-list { margin: 0; padding-left: 18px; color: var(--ink-2); display: grid; gap: 10px; font-size: 13.5px; }
 

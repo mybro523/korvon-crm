@@ -4,7 +4,7 @@ import { useAuth } from '@/app/providers/AuthProvider';
 import { extractError } from '@/shared/api/http';
 import { t } from '@/shared/i18n/tj';
 import { Button } from '@/shared/ui/Button';
-import { Input } from '@/shared/ui/Input';
+import { Input, PasswordInput } from '@/shared/ui/Input';
 
 export function LoginPage() {
   const { user, login } = useAuth();
@@ -46,9 +46,8 @@ export function LoginPage() {
             autoFocus
             autoComplete="username"
           />
-          <Input
+          <PasswordInput
             label={t.login.password}
-            type="password"
             placeholder={t.login.passwordPlaceholder}
             value={password}
             onChange={(e) => setPassword(e.target.value)}

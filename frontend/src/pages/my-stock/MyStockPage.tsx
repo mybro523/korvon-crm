@@ -31,9 +31,11 @@ export function MyStockPage() {
   return (
     <>
       <div className="page-header">
-        <div>
-          <h1 className="page-title">{t.nav.myStock}</h1>
-          <p className="page-subtitle">{user?.point?.name ?? ''}</p>
+        <div className="page-header-row">
+          <div>
+            <h1 className="page-title">{t.nav.myStock}</h1>
+            <p className="page-subtitle">{user?.point?.name ?? ''}</p>
+          </div>
         </div>
       </div>
       <div className="card">
@@ -56,9 +58,9 @@ export function MyStockPage() {
               <tbody>
                 {stock.map((row) => (
                   <tr key={row.productId}>
-                    <td style={{ fontWeight: 600 }}>{row.name}</td>
-                    <td>{row.category ?? '—'}</td>
-                    <td className="num">
+                    <td className="td-main">{row.name}</td>
+                    <td data-label={t.warehouse.category}>{row.category ?? '—'}</td>
+                    <td className="num" data-label={t.warehouse.quantity}>
                       {row.quantity <= 0 ? (
                         <Badge variant="danger">{t.warehouse.outOfStock}</Badge>
                       ) : (

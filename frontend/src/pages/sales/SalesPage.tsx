@@ -125,26 +125,28 @@ export function SalesPage() {
   return (
     <>
       <div className="page-header">
-        <div>
-          <h1 className="page-title">{t.sales.title}</h1>
-          <p className="page-subtitle">{t.sales.subtitle}</p>
-        </div>
-        <div className="page-actions">
+        <div className="page-header-row">
+          <div>
+            <h1 className="page-title">{t.sales.title}</h1>
+            <p className="page-subtitle">{t.sales.subtitle}</p>
+          </div>
           {isOwner && (
-            <Button variant="secondary" onClick={onExport} loading={exporting}>
-              <Icon name="download" size={16} /> {t.common.exportExcel}
-            </Button>
+            <div className="page-actions">
+              <Button variant="secondary" onClick={onExport} loading={exporting}>
+                <Icon name="download" size={17} /> {t.common.exportExcel}
+              </Button>
+              <Link to="/sales/new" style={{ display: 'contents' }}>
+                <Button>
+                  <Icon name="plus" size={17} /> {t.sales.newSale}
+                </Button>
+              </Link>
+            </div>
           )}
-          <Link to="/sales/new">
-            <Button>
-              <Icon name="plus" size={16} /> {t.sales.newSale}
-            </Button>
-          </Link>
         </div>
       </div>
 
       <div className="filters-bar">
-        <div className="chip-group">
+        <div className="chip-row">
           {periods.map((p) => (
             <button
               key={p.key}
@@ -156,7 +158,7 @@ export function SalesPage() {
           ))}
         </div>
         {period === 'custom' && (
-          <>
+          <div className="filters-dates">
             <input
               type="date"
               className="field-input"
@@ -170,47 +172,49 @@ export function SalesPage() {
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}
             />
-          </>
+          </div>
         )}
-        {isOwner && (
+        <div className="filters-selects">
+          {isOwner && (
+            <select
+              className="field-select"
+              value={pointSel}
+              onChange={(e) => setPointSel(e.target.value)}
+            >
+              <option value="">
+                {t.sales.place}: {t.common.all}
+              </option>
+              <option value="WAREHOUSE">{t.sales.warehouse}</option>
+              {points.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          )}
           <select
             className="field-select"
-            value={pointSel}
-            onChange={(e) => setPointSel(e.target.value)}
+            value={payment}
+            onChange={(e) => setPayment(e.target.value)}
           >
             <option value="">
-              {t.sales.place}: {t.common.all}
+              {t.sales.payment}: {t.common.all}
             </option>
-            <option value="WAREHOUSE">{t.sales.warehouse}</option>
-            {points.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
+            <option value="CASH">{t.sales.cash}</option>
+            <option value="CARD">{t.sales.card}</option>
           </select>
-        )}
-        <select
-          className="field-select"
-          value={payment}
-          onChange={(e) => setPayment(e.target.value)}
-        >
-          <option value="">
-            {t.sales.payment}: {t.common.all}
-          </option>
-          <option value="CASH">{t.sales.cash}</option>
-          <option value="CARD">{t.sales.card}</option>
-        </select>
-        <select
-          className="field-select"
-          value={saleType}
-          onChange={(e) => setSaleType(e.target.value)}
-        >
-          <option value="">
-            {t.sales.type}: {t.common.all}
-          </option>
-          <option value="RETAIL">{t.sales.retail}</option>
-          <option value="WHOLESALE">{t.sales.wholesale}</option>
-        </select>
+          <select
+            className="field-select"
+            value={saleType}
+            onChange={(e) => setSaleType(e.target.value)}
+          >
+            <option value="">
+              {t.sales.type}: {t.common.all}
+            </option>
+            <option value="RETAIL">{t.sales.retail}</option>
+            <option value="WHOLESALE">{t.sales.wholesale}</option>
+          </select>
+        </div>
         <div className="search-box">
           <Icon name="search" size={16} />
           <input
@@ -233,8 +237,8 @@ export function SalesPage() {
               <table className="table">
                 <thead>
                   <tr>
-                    <th>{t.sales.dateTime}</th>
                     <th>{t.sales.product}</th>
+                    <th>{t.sales.dateTime}</th>
                     <th className="num">{t.sales.quantity}</th>
                     <th className="num">{t.sales.unitPrice}</th>
                     <th className="num">{t.sales.totalAmount}</th>
@@ -247,41 +251,49 @@ export function SalesPage() {
                 <tbody>
                   {data.items.map((s) => (
                     <tr key={s.id}>
-                      <td>{fmtDateTime(s.createdAt)}</td>
-                      <td style={{ fontWeight: 600 }}>{s.productName}</td>
-                      <td className="num">
+                      <td className="td-main">{s.productName}</td>
+                      <td data-label={t.sales.dateTime}>{fmtDateTime(s.createdAt)}</td>
+                      <td className="num" data-label={t.sales.quantity}>
                         {fmtQty(s.quantity)} {s.unit}
                       </td>
-                      <td className="num">{fmtMoney(s.unitPrice)}</td>
-                      <td className="num" style={{ fontWeight: 700 }}>
+                      <td className="num" data-label={t.sales.unitPrice}>
+                        {fmtMoney(s.unitPrice)}
+                      </td>
+                      <td className="num" data-label={t.sales.totalAmount} style={{ fontWeight: 700 }}>
                         {fmtMoney(s.totalAmount)}
                       </td>
-                      <td>
+                      <td data-label={t.sales.type}>
                         {s.saleType === 'WHOLESALE' ? (
                           <Badge variant="primary">{t.sales.wholesale}</Badge>
                         ) : (
                           <Badge variant="gray">{t.sales.retail}</Badge>
                         )}
                       </td>
-                      <td>
+                      <td data-label={t.sales.payment}>
                         {s.paymentMethod === 'CASH' ? (
-                          <Badge variant="success">💵 {t.sales.cash}</Badge>
+                          <Badge variant="success">
+                            <Icon name="cash" size={13} /> {t.sales.cash}
+                          </Badge>
                         ) : (
-                          <Badge variant="primary">💳 {t.sales.card}</Badge>
+                          <Badge variant="primary">
+                            <Icon name="card" size={13} /> {t.sales.card}
+                          </Badge>
                         )}
                       </td>
-                      <td>{s.pointName ?? t.sales.warehouse}</td>
-                      <td>{s.sellerName}</td>
+                      <td data-label={t.sales.place}>{s.pointName ?? t.sales.warehouse}</td>
+                      <td data-label={t.sales.seller}>{s.sellerName}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={4}>
-                      {t.common.total}: {data.total} {t.sales.salesCount}
+                    <td colSpan={4} data-label={t.common.total}>
+                      {data.total} {t.sales.salesCount}
                     </td>
-                    <td className="num">{fmtMoney(data.totalAmount)}</td>
-                    <td colSpan={4} />
+                    <td className="num" data-label={t.sales.totalAmount}>
+                      {fmtMoney(data.totalAmount)}
+                    </td>
+                    <td colSpan={4} className="tfoot-filler" />
                   </tr>
                 </tfoot>
               </table>

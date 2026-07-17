@@ -50,18 +50,22 @@ export function PointsPage() {
   return (
     <>
       <div className="page-header">
-        <div>
-          <h1 className="page-title">{t.points.title}</h1>
-          <p className="page-subtitle">{t.points.subtitle}</p>
+        <div className="page-header-row">
+          <div>
+            <h1 className="page-title">{t.points.title}</h1>
+            <p className="page-subtitle">{t.points.subtitle}</p>
+          </div>
+          <div className="page-actions">
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+            >
+              <Icon name="plus" size={17} /> {t.points.addPoint}
+            </Button>
+          </div>
         </div>
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setFormOpen(true);
-          }}
-        >
-          <Icon name="plus" size={16} /> {t.points.addPoint}
-        </Button>
       </div>
 
       {loading ? (
@@ -74,27 +78,36 @@ export function PointsPage() {
         <div className="points-grid">
           {points.map((p) => (
             <div key={p.id} className="card point-card">
-              <div className="point-card-name">{p.name}</div>
+              <div className="point-card-top">
+                <div className="point-card-name">{p.name}</div>
+                <Icon name="store" size={20} className="" />
+              </div>
               <div className="point-card-addr">{p.address ?? ''}</div>
               <div className="point-card-meta">
-                📦 {p.stockItems ?? 0} {t.points.stockItems}
+                <Icon name="box" size={15} /> {p.stockItems ?? 0} {t.points.stockItems}
               </div>
               <div className="point-card-actions">
                 <Button size="sm" onClick={() => navigate(`/points/${p.id}`)}>
-                  <Icon name="eye" size={14} /> {t.common.open}
+                  <Icon name="eye" size={15} /> {t.common.open}
                 </Button>
                 <Button
                   size="sm"
                   variant="secondary"
+                  className="btn-icon"
                   onClick={() => {
                     setEditing(p);
                     setFormOpen(true);
                   }}
                 >
-                  <Icon name="edit" size={14} />
+                  <Icon name="edit" size={15} />
                 </Button>
-                <Button size="sm" variant="secondary" onClick={() => setDeleting(p)}>
-                  <Icon name="trash" size={14} />
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="btn-icon"
+                  onClick={() => setDeleting(p)}
+                >
+                  <Icon name="trash" size={15} />
                 </Button>
               </div>
             </div>

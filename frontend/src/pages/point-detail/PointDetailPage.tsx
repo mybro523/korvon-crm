@@ -43,23 +43,27 @@ export function PointDetailPage() {
   return (
     <>
       <div className="page-header">
-        <div>
-          <Link to="/points" style={{ fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <Icon name="left" size={14} /> {t.common.back}
-          </Link>
-          <h1 className="page-title" style={{ marginTop: 4 }}>
-            {point.name}
-          </h1>
-          <p className="page-subtitle">{point.address ?? ''}</p>
+        <div className="page-header-row">
+          <div>
+            <Link to="/points" className="back-link">
+              <Icon name="left" size={15} /> {t.common.back}
+            </Link>
+            <h1 className="page-title">{point.name}</h1>
+            <p className="page-subtitle">{point.address ?? ''}</p>
+          </div>
+          <div className="page-actions">
+            <Button onClick={() => setTransferOpen(true)}>
+              <Icon name="transfer" size={17} /> {t.points.transferTitle}
+            </Button>
+          </div>
         </div>
-        <Button onClick={() => setTransferOpen(true)}>
-          <Icon name="transfer" size={16} /> {t.points.transferTitle}
-        </Button>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card section-gap">
         <div className="card-pad" style={{ paddingBottom: 0 }}>
-          <h3 className="card-title">{t.points.stock}</h3>
+          <h3 className="card-title">
+            <Icon name="box" size={15} /> {t.points.stock}
+          </h3>
         </div>
         {stock.length === 0 ? (
           <EmptyState text={t.points.noStock} />
@@ -80,9 +84,9 @@ export function PointDetailPage() {
               <tbody>
                 {stock.map((row) => (
                   <tr key={row.productId}>
-                    <td style={{ fontWeight: 600 }}>{row.name}</td>
-                    <td>{row.category ?? '—'}</td>
-                    <td className="num">
+                    <td className="td-main">{row.name}</td>
+                    <td data-label={t.warehouse.category}>{row.category ?? '—'}</td>
+                    <td className="num" data-label={t.warehouse.quantity}>
                       {row.quantity <= 0 ? (
                         <Badge variant="danger">{t.warehouse.outOfStock}</Badge>
                       ) : (
@@ -90,7 +94,9 @@ export function PointDetailPage() {
                       )}
                     </td>
                     {row.costPrice !== undefined && (
-                      <td className="num">{fmtMoney(row.costPrice)}</td>
+                      <td className="num" data-label={t.warehouse.costPrice}>
+                        {fmtMoney(row.costPrice)}
+                      </td>
                     )}
                     <td>
                       <div className="row-actions">
@@ -100,7 +106,7 @@ export function PointDetailPage() {
                           disabled={row.quantity <= 0}
                           onClick={() => setReturning(row)}
                         >
-                          {t.points.returnBtn}
+                          <Icon name="transfer" size={14} /> {t.points.returnBtn}
                         </Button>
                       </div>
                     </td>
@@ -114,7 +120,9 @@ export function PointDetailPage() {
 
       <div className="card">
         <div className="card-pad" style={{ paddingBottom: 0 }}>
-          <h3 className="card-title">{t.points.history}</h3>
+          <h3 className="card-title">
+            <Icon name="transfer" size={15} /> {t.points.history}
+          </h3>
         </div>
         {transfers.length === 0 ? (
           <EmptyState />
@@ -123,8 +131,8 @@ export function PointDetailPage() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>{t.common.date}</th>
                   <th>{t.sales.product}</th>
+                  <th>{t.common.date}</th>
                   <th>{t.sales.type}</th>
                   <th className="num">{t.warehouse.quantity}</th>
                   <th>{t.sales.seller}</th>
@@ -133,19 +141,19 @@ export function PointDetailPage() {
               <tbody>
                 {transfers.map((tr) => (
                   <tr key={tr.id}>
-                    <td>{fmtDateTime(tr.createdAt)}</td>
-                    <td style={{ fontWeight: 600 }}>{tr.productName}</td>
-                    <td>
+                    <td className="td-main">{tr.productName}</td>
+                    <td data-label={t.common.date}>{fmtDateTime(tr.createdAt)}</td>
+                    <td data-label={t.sales.type}>
                       {tr.direction === 'TO_POINT' ? (
                         <Badge variant="primary">→ {t.points.toPoint}</Badge>
                       ) : (
                         <Badge variant="warning">← {t.points.toWarehouse}</Badge>
                       )}
                     </td>
-                    <td className="num">
+                    <td className="num" data-label={t.warehouse.quantity}>
                       {fmtQty(tr.quantity)} {tr.unit}
                     </td>
-                    <td>{tr.userName}</td>
+                    <td data-label={t.sales.seller}>{tr.userName}</td>
                   </tr>
                 ))}
               </tbody>

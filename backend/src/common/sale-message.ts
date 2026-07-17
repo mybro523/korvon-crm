@@ -30,22 +30,24 @@ export const SALE_TYPE_LABEL: Record<string, string> = {
   RETAIL: 'Чакана',
 };
 
-/** текст уведомления о продаже (таджикский); html=true — для Telegram */
+/** текст уведомления о продаже (таджикский); html=true — для Telegram (с эмодзи) */
 export function buildSaleMessage(sale: Sale, html: boolean): string {
   const esc = html ? escapeHtml : (s: string) => s;
   const b = html ? (s: string) => `<b>${s}</b>` : (s: string) => s;
+  // эмодзи — только в Telegram; интерфейс системы без стикеров
+  const e = (emoji: string) => (html ? `${emoji} ` : '');
   const place = sale.pointName ? esc(sale.pointName) : 'Анбор';
 
   return [
-    `🛒 ${b('Фурӯши нав!')}`,
-    `📅 Сана ва вақт: ${fmtDateTime(sale.createdAt)}`,
-    `🏬 Ҷои фурӯш: ${place}`,
-    `👤 Фурӯшанда: ${esc(sale.sellerName)}`,
-    `📦 Мол: ${esc(sale.productName)}`,
-    `🔢 Миқдор: ${fmtQty(sale.quantity)} ${esc(sale.unit)}`,
-    `💵 Нархи воҳид: ${fmtMoney(sale.unitPrice)} сомонӣ`,
-    `💰 Маблағи умумӣ: ${b(fmtMoney(sale.totalAmount) + ' сомонӣ')}`,
-    `💳 Пардохт: ${PAYMENT_LABEL[sale.paymentMethod]}`,
-    `📊 Намуди фурӯш: ${SALE_TYPE_LABEL[sale.saleType]}`,
+    `${e('🛒')}${b('Фурӯши нав!')}`,
+    `${e('📅')}Сана ва вақт: ${fmtDateTime(sale.createdAt)}`,
+    `${e('🏬')}Ҷои фурӯш: ${place}`,
+    `${e('👤')}Фурӯшанда: ${esc(sale.sellerName)}`,
+    `${e('📦')}Мол: ${esc(sale.productName)}`,
+    `${e('🔢')}Миқдор: ${fmtQty(sale.quantity)} ${esc(sale.unit)}`,
+    `${e('💵')}Нархи воҳид: ${fmtMoney(sale.unitPrice)} сомонӣ`,
+    `${e('💰')}Маблағи умумӣ: ${b(fmtMoney(sale.totalAmount) + ' сомонӣ')}`,
+    `${e('💳')}Пардохт: ${PAYMENT_LABEL[sale.paymentMethod]}`,
+    `${e('📊')}Намуди фурӯш: ${SALE_TYPE_LABEL[sale.saleType]}`,
   ].join('\n');
 }

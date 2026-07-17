@@ -14,6 +14,16 @@ import { useToast } from '@/shared/ui/Toast';
 
 const LIMIT = 20;
 
+/** старые уведомления могли сохраниться с эмодзи — вычищаем при показе;
+ * строку «Сана ва вақт» убираем — дата и так показана под сообщением */
+const stripEmoji = (s: string) =>
+  s
+    .replace(/[\p{Extended_Pictographic}️]/gu, '')
+    .replace(/^ +/gm, '')
+    .split('\n')
+    .filter((line) => !line.startsWith('Сана ва вақт'))
+    .join('\n');
+
 export function NotificationsPage() {
   const toast = useToast();
   const [data, setData] = useState<NotificationsResponse | null>(null);
@@ -58,18 +68,24 @@ export function NotificationsPage() {
   return (
     <>
       <div className="page-header">
-        <div>
-          <h1 className="page-title">{t.notifications.title}</h1>
-          <p className="page-subtitle">
-            {t.notifications.subtitle}
-            {data && data.unreadCount > 0 ? ` · ${data.unreadCount} ${t.notifications.unread}` : ''}
-          </p>
+        <div className="page-header-row">
+          <div>
+            <h1 className="page-title">{t.notifications.title}</h1>
+            <p className="page-subtitle">
+              {t.notifications.subtitle}
+              {data && data.unreadCount > 0
+                ? ` · ${data.unreadCount} ${t.notifications.unread}`
+                : ''}
+            </p>
+          </div>
+          {data && data.unreadCount > 0 && (
+            <div className="page-actions">
+              <Button variant="secondary" onClick={markAll} loading={marking}>
+                <Icon name="check" size={16} /> {t.notifications.markAllRead}
+              </Button>
+            </div>
+          )}
         </div>
-        {data && data.unreadCount > 0 && (
-          <Button variant="secondary" onClick={markAll} loading={marking}>
-            <Icon name="check" size={16} /> {t.notifications.markAllRead}
-          </Button>
-        )}
       </div>
 
       <div className="card">
@@ -88,7 +104,7 @@ export function NotificationsPage() {
               >
                 {!n.isRead && <div className="notif-dot" />}
                 <div>
-                  <div className="notif-message">{n.message}</div>
+                  <div className="notif-message">{stripEmoji(n.message)}</div>
                   <div className="notif-date">{fmtDateTime(n.createdAt)}</div>
                 </div>
               </div>

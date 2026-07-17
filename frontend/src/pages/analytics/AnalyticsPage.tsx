@@ -25,6 +25,7 @@ import { CHART } from '@/shared/config';
 import { t } from '@/shared/i18n/tj';
 import { fmtMoney, fmtQty } from '@/shared/lib/format';
 import { PeriodKey, periodRange, userTimeZone } from '@/shared/lib/periods';
+import { Icon } from '@/shared/ui/Icon';
 import { EmptyState, Spinner } from '@/shared/ui/misc';
 import { useToast } from '@/shared/ui/Toast';
 
@@ -41,22 +42,24 @@ function ChartTooltip({
   money?: boolean;
 }) {
   if (!active || !payload?.length) return null;
+  const niceLabel =
+    label && /^\d{4}-\d{2}-\d{2}$/.test(label) ? dayjs(label).format('DD.MM.YYYY') : label;
   return (
     <div
       style={{
         background: '#fff',
         border: '1px solid var(--border)',
         borderRadius: 8,
-        boxShadow: 'var(--shadow)',
+        boxShadow: 'var(--shadow-pop)',
         padding: '8px 12px',
         fontSize: 12.5,
       }}
     >
-      {label && <div style={{ fontWeight: 700, marginBottom: 4 }}>{label}</div>}
+      {niceLabel && <div style={{ fontWeight: 700, marginBottom: 4 }}>{niceLabel}</div>}
       {payload.map((p, i) => (
-        <div key={i} style={{ color: 'var(--text-2)' }}>
+        <div key={i} style={{ color: 'var(--ink-2)' }}>
           {p.name}:{' '}
-          <b style={{ color: 'var(--text)' }}>
+          <b style={{ color: 'var(--ink)' }}>
             {money ? fmtMoney(Number(p.value)) : fmtQty(Number(p.value))}
           </b>
         </div>
@@ -65,10 +68,23 @@ function ChartTooltip({
   );
 }
 
-function StatTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function StatTile({
+  label,
+  value,
+  sub,
+  icon,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  icon: string;
+}) {
   return (
     <div className="card stat-tile">
-      <div className="stat-label">{label}</div>
+      <div className="stat-head">
+        <Icon name={icon} size={15} />
+        <div className="stat-label">{label}</div>
+      </div>
       <div className="stat-value">{value}</div>
       {sub && <div className="stat-sub">{sub}</div>}
     </div>
@@ -147,14 +163,16 @@ export function AnalyticsPage() {
   return (
     <>
       <div className="page-header">
-        <div>
-          <h1 className="page-title">{t.analytics.title}</h1>
-          <p className="page-subtitle">{t.analytics.subtitle}</p>
+        <div className="page-header-row">
+          <div>
+            <h1 className="page-title">{t.analytics.title}</h1>
+            <p className="page-subtitle">{t.analytics.subtitle}</p>
+          </div>
         </div>
       </div>
 
       <div className="filters-bar">
-        <div className="chip-group">
+        <div className="chip-row">
           {periods.map((p) => (
             <button
               key={p.key}
@@ -166,7 +184,7 @@ export function AnalyticsPage() {
           ))}
         </div>
         {period === 'custom' && (
-          <>
+          <div className="filters-dates">
             <input
               type="date"
               className="field-input"
@@ -180,7 +198,7 @@ export function AnalyticsPage() {
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}
             />
-          </>
+          </div>
         )}
       </div>
 
@@ -192,26 +210,30 @@ export function AnalyticsPage() {
         <>
           <div className="stat-grid">
             <StatTile
+              icon="cart"
               label={t.analytics.salesCount}
               value={String(summary.salesCount)}
               sub={`${t.analytics.wholesale}: ${summary.wholesaleCount} · ${t.analytics.retail}: ${summary.retailCount}`}
             />
             <StatTile
+              icon="chart"
               label={t.analytics.totalAmount}
               value={fmtMoney(summary.totalAmount)}
               sub={`${t.analytics.profit}: ${fmtMoney(summary.totalProfit)}`}
             />
             <StatTile
-              label={`💵 ${t.analytics.cashSales}`}
+              icon="cash"
+              label={t.analytics.cashSales}
               value={fmtMoney(summary.cashAmount)}
               sub={`${summary.cashCount} ${t.sales.salesCount}`}
             />
             <StatTile
-              label={`💳 ${t.analytics.cardSales}`}
+              icon="card"
+              label={t.analytics.cardSales}
               value={fmtMoney(summary.cardAmount)}
               sub={`${summary.cardCount} ${t.sales.salesCount}`}
             />
-            <StatTile label={t.analytics.itemsSold} value={fmtQty(summary.itemsSold)} />
+            <StatTile icon="box" label={t.analytics.itemsSold} value={fmtQty(summary.itemsSold)} />
           </div>
 
           {!hasData ? (
@@ -270,15 +292,15 @@ export function AnalyticsPage() {
                   <BarChart
                     data={byPoints}
                     layout="vertical"
-                    margin={{ top: 4, right: 90, left: 8, bottom: 4 }}
+                    margin={{ top: 4, right: 78, left: 4, bottom: 4 }}
                   >
                     <CartesianGrid stroke={CHART.grid} horizontal={false} />
                     <XAxis type="number" hide />
                     <YAxis
                       type="category"
                       dataKey="name"
-                      width={110}
-                      tick={{ fill: CHART.ink, fontSize: 12 }}
+                      width={92}
+                      tick={{ fill: CHART.ink, fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
                     />
@@ -311,15 +333,15 @@ export function AnalyticsPage() {
                     <BarChart
                       data={top}
                       layout="vertical"
-                      margin={{ top: 4, right: 80, left: 8, bottom: 4 }}
+                      margin={{ top: 4, right: 56, left: 4, bottom: 4 }}
                     >
                       <CartesianGrid stroke={CHART.grid} horizontal={false} />
                       <XAxis type="number" hide />
                       <YAxis
                         type="category"
                         dataKey="name"
-                        width={130}
-                        tick={{ fill: CHART.ink, fontSize: 12 }}
+                        width={104}
+                        tick={{ fill: CHART.ink, fontSize: 11 }}
                         axisLine={false}
                         tickLine={false}
                       />
@@ -359,14 +381,23 @@ export function AnalyticsPage() {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-                <div style={{ display: 'flex', gap: 22, padding: '2px 4px 10px', fontSize: 12.5, color: 'var(--text-2)' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 18,
+                    flexWrap: 'wrap',
+                    padding: '2px 12px 10px',
+                    fontSize: 12.5,
+                    color: 'var(--ink-2)',
+                  }}
+                >
                   <span>
                     <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, background: CHART.series1, marginRight: 6 }} />
-                    {t.sales.cash}: <b style={{ color: 'var(--text)' }}>{fmtMoney(summary.cashAmount)}</b>
+                    {t.sales.cash}: <b style={{ color: 'var(--ink)' }}>{fmtMoney(summary.cashAmount)}</b>
                   </span>
                   <span>
                     <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, background: CHART.series2, marginRight: 6 }} />
-                    {t.sales.card}: <b style={{ color: 'var(--text)' }}>{fmtMoney(summary.cardAmount)}</b>
+                    {t.sales.card}: <b style={{ color: 'var(--ink)' }}>{fmtMoney(summary.cardAmount)}</b>
                   </span>
                 </div>
               </div>

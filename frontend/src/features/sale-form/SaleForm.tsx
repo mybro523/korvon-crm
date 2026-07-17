@@ -13,6 +13,7 @@ import { extractError } from '@/shared/api/http';
 import { t } from '@/shared/i18n/tj';
 import { fmtMoney, fmtQty } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/Button';
+import { Icon } from '@/shared/ui/Icon';
 import { Input, Select } from '@/shared/ui/Input';
 import { useToast } from '@/shared/ui/Toast';
 
@@ -112,13 +113,23 @@ export function SaleForm() {
   if (!isOwner && !user?.pointId) {
     return (
       <div className="card card-pad" style={{ maxWidth: 680 }}>
-        <p style={{ margin: 0, color: 'var(--text-2)' }}>⚠️ {t.sales.noPointAssigned}</p>
+        <p
+          style={{
+            margin: 0,
+            color: 'var(--ink-2)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 9,
+          }}
+        >
+          <Icon name="alert" size={19} /> {t.sales.noPointAssigned}
+        </p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="card card-pad" style={{ maxWidth: 680 }}>
+    <form onSubmit={onSubmit} className="card card-pad sale-form" style={{ maxWidth: 680 }}>
       {/* источник: склад или точка (только владелец) */}
       {isOwner && (
         <div className="field">
@@ -252,14 +263,16 @@ export function SaleForm() {
             className={`seg-option ${paymentMethod === 'CASH' ? 'active' : ''}`}
             onClick={() => setPaymentMethod('CASH')}
           >
-            💵 {t.sales.cash}
+            <Icon name="cash" size={21} />
+            {t.sales.cash}
           </button>
           <button
             type="button"
             className={`seg-option ${paymentMethod === 'CARD' ? 'active' : ''}`}
             onClick={() => setPaymentMethod('CARD')}
           >
-            💳 {t.sales.card}
+            <Icon name="card" size={21} />
+            {t.sales.card}
           </button>
         </div>
       </div>

@@ -56,18 +56,22 @@ export function UsersPage() {
   return (
     <>
       <div className="page-header">
-        <div>
-          <h1 className="page-title">{t.users.title}</h1>
-          <p className="page-subtitle">{t.users.subtitle}</p>
+        <div className="page-header-row">
+          <div>
+            <h1 className="page-title">{t.users.title}</h1>
+            <p className="page-subtitle">{t.users.subtitle}</p>
+          </div>
+          <div className="page-actions">
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+            >
+              <Icon name="plus" size={17} /> {t.users.addUser}
+            </Button>
+          </div>
         </div>
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setFormOpen(true);
-          }}
-        >
-          <Icon name="plus" size={16} /> {t.users.addUser}
-        </Button>
       </div>
 
       <div className="card">
@@ -92,41 +96,40 @@ export function UsersPage() {
               <tbody>
                 {users.map((u) => (
                   <tr key={u.id}>
-                    <td style={{ fontWeight: 600 }}>{u.fullName}</td>
-                    <td>@{u.username}</td>
-                    <td>
+                    <td className="td-main">{u.fullName}</td>
+                    <td data-label={t.users.username}>@{u.username}</td>
+                    <td data-label={t.users.role}>
                       {u.role === 'OWNER' ? (
                         <Badge variant="primary">{t.roles.OWNER}</Badge>
                       ) : (
                         <Badge variant="gray">{t.roles.SELLER}</Badge>
                       )}
                     </td>
-                    <td>{u.point?.name ?? '—'}</td>
-                    <td>
+                    <td data-label={t.users.point}>{u.point?.name ?? '—'}</td>
+                    <td data-label={t.users.status}>
                       {u.isActive ? (
                         <Badge variant="success">{t.users.active}</Badge>
                       ) : (
                         <Badge variant="danger">{t.users.inactive}</Badge>
                       )}
                     </td>
-                    <td>{fmtDate(u.createdAt)}</td>
+                    <td data-label={t.users.createdAt}>{fmtDate(u.createdAt)}</td>
                     <td>
                       <div className="row-actions">
                         <Button
-                          variant="ghost"
+                          variant="secondary"
                           size="sm"
-                          className="btn-icon"
                           title={t.common.edit}
                           onClick={() => {
                             setEditing(u);
                             setFormOpen(true);
                           }}
                         >
-                          <Icon name="edit" size={15} />
+                          <Icon name="edit" size={15} /> {t.common.edit}
                         </Button>
-                        {u.id !== me?.id && (
+                        {u.id !== me?.id ? (
                           <Button
-                            variant="ghost"
+                            variant="secondary"
                             size="sm"
                             className="btn-icon"
                             title={t.common.delete}
@@ -134,6 +137,8 @@ export function UsersPage() {
                           >
                             <Icon name="trash" size={15} />
                           </Button>
+                        ) : (
+                          <span className="action-slot" aria-hidden="true" />
                         )}
                       </div>
                     </td>

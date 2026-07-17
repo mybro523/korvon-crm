@@ -13,7 +13,7 @@ interface ConfirmDialogProps {
 export function ConfirmDialog({ title, message, onConfirm, onCancel, loading }: ConfirmDialogProps) {
   return (
     <Modal title={title} onClose={onCancel} width={420}>
-      <p style={{ margin: '0 0 18px', color: 'var(--text-2)' }}>{message}</p>
+      <p style={{ margin: '0 0 18px', color: 'var(--ink-2)' }}>{message}</p>
       <div className="modal-footer">
         <Button variant="secondary" onClick={onCancel}>
           {t.common.cancel}

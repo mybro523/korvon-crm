@@ -5,9 +5,11 @@ export function SaleNewPage() {
   return (
     <>
       <div className="page-header">
-        <div>
-          <h1 className="page-title">{t.sales.newSale}</h1>
-          <p className="page-subtitle">{t.tagline}</p>
+        <div className="page-header-row">
+          <div>
+            <h1 className="page-title">{t.sales.newSale}</h1>
+            <p className="page-subtitle">{t.tagline}</p>
+          </div>
         </div>
       </div>
       <SaleForm />

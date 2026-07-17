@@ -67,15 +67,19 @@ export function SettingsPage() {
   return (
     <>
       <div className="page-header">
-        <div>
-          <h1 className="page-title">{t.settings.title}</h1>
-          <p className="page-subtitle">{t.settings.subtitle}</p>
+        <div className="page-header-row">
+          <div>
+            <h1 className="page-title">{t.settings.title}</h1>
+            <p className="page-subtitle">{t.settings.subtitle}</p>
+          </div>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' }} className="settings-grid">
+      <div className="settings-grid">
         <form className="card card-pad" onSubmit={onSave}>
-          <h3 className="card-title">✈️ {t.settings.telegramTitle}</h3>
+          <h3 className="card-title">
+            <Icon name="telegram" size={16} /> {t.settings.telegramTitle}
+          </h3>
           <p className="hint-text" style={{ marginTop: -8, marginBottom: 14 }}>
             {t.settings.telegramDesc}
           </p>
@@ -93,7 +97,7 @@ export function SettingsPage() {
             placeholder="123456789"
             autoComplete="off"
           />
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div className="btn-row">
             <Button type="submit" loading={saving}>
               {t.common.save}
             </Button>
@@ -104,8 +108,10 @@ export function SettingsPage() {
         </form>
 
         <div className="card card-pad">
-          <h3 className="card-title">💡 {t.settings.howTitle}</h3>
-          <ol style={{ margin: 0, paddingLeft: 18, color: 'var(--text-2)', display: 'grid', gap: 10 }}>
+          <h3 className="card-title">
+            <Icon name="info" size={16} /> {t.settings.howTitle}
+          </h3>
+          <ol className="howto-list">
             <li>{t.settings.how1}</li>
             <li>{t.settings.how2}</li>
             <li>{t.settings.how3}</li>

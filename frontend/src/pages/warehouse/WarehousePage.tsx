@@ -25,7 +25,6 @@ export function WarehousePage() {
   const [deleting, setDeleting] = useState<Product | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [exporting, setExporting] = useState(false);
-
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -93,22 +92,24 @@ export function WarehousePage() {
   return (
     <>
       <div className="page-header">
-        <div>
-          <h1 className="page-title">{t.warehouse.title}</h1>
-          <p className="page-subtitle">{t.warehouse.subtitle}</p>
-        </div>
-        <div className="page-actions">
-          <Button variant="secondary" onClick={onExport} loading={exporting}>
-            <Icon name="download" size={16} /> {t.common.exportExcel}
-          </Button>
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-          >
-            <Icon name="plus" size={16} /> {t.warehouse.addProduct}
-          </Button>
+        <div className="page-header-row">
+          <div>
+            <h1 className="page-title">{t.warehouse.title}</h1>
+            <p className="page-subtitle">{t.warehouse.subtitle}</p>
+          </div>
+          <div className="page-actions">
+            <Button variant="secondary" onClick={onExport} loading={exporting}>
+              <Icon name="download" size={17} /> Excel
+            </Button>
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+            >
+              <Icon name="plus" size={17} /> {t.warehouse.addProduct}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -122,18 +123,20 @@ export function WarehousePage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <select
-          className="field-select"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        >
-          <option value="">{t.warehouse.allCategories}</option>
-          {categories.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
+        <div className="filters-selects">
+          <select
+            className="field-select"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">{t.warehouse.allCategories}</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="card">
@@ -159,15 +162,19 @@ export function WarehousePage() {
               <tbody>
                 {products.map((p) => (
                   <tr key={p.id}>
-                    <td style={{ fontWeight: 600 }}>{p.name}</td>
-                    <td>{p.category ?? '—'}</td>
-                    <td className="num">{fmtMoney(p.costPrice)}</td>
-                    <td className="num">
+                    <td className="td-main">{p.name}</td>
+                    <td data-label={t.warehouse.category}>{p.category ?? '—'}</td>
+                    <td className="num" data-label={t.warehouse.costPrice}>
+                      {fmtMoney(p.costPrice)}
+                    </td>
+                    <td className="num" data-label={t.warehouse.quantity}>
                       {fmtQty(p.quantity)} {p.unit}
                     </td>
-                    <td className="num">{fmtMoney(p.costPrice * p.quantity)}</td>
-                    <td>{fmtDate(p.arrivalDate)}</td>
-                    <td>
+                    <td className="num" data-label={t.warehouse.totalValue}>
+                      {fmtMoney(p.costPrice * p.quantity)}
+                    </td>
+                    <td data-label={t.warehouse.arrivalDate}>{fmtDate(p.arrivalDate)}</td>
+                    <td data-label={t.users.status}>
                       {p.quantity <= 0 ? (
                         <Badge variant="danger">{t.warehouse.outOfStock}</Badge>
                       ) : (
@@ -177,19 +184,18 @@ export function WarehousePage() {
                     <td>
                       <div className="row-actions">
                         <Button
-                          variant="ghost"
+                          variant="secondary"
                           size="sm"
-                          className="btn-icon"
                           title={t.common.edit}
                           onClick={() => {
                             setEditing(p);
                             setFormOpen(true);
                           }}
                         >
-                          <Icon name="edit" size={15} />
+                          <Icon name="edit" size={15} /> {t.common.edit}
                         </Button>
                         <Button
-                          variant="ghost"
+                          variant="secondary"
                           size="sm"
                           className="btn-icon"
                           title={t.common.delete}
@@ -204,9 +210,13 @@ export function WarehousePage() {
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={4}>{t.warehouse.warehouseValue}</td>
-                  <td className="num">{fmtMoney(totalValue)}</td>
-                  <td colSpan={3} />
+                  <td colSpan={4} data-label={t.common.total}>
+                    {products.length} мол
+                  </td>
+                  <td className="num" data-label={t.warehouse.warehouseValue}>
+                    {fmtMoney(totalValue)}
+                  </td>
+                  <td colSpan={3} className="tfoot-filler" />
                 </tr>
               </tfoot>
             </table>

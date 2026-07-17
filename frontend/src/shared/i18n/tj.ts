@@ -14,6 +14,7 @@ export const t = {
     settings: 'Танзимот',
     myStock: 'Молҳои ман',
     logout: 'Баромадан',
+    more: 'Бештар',
   },
 
   roles: {

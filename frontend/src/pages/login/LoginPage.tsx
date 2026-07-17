@@ -32,7 +32,7 @@ export function LoginPage() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-logo">
-          <div className="sidebar-logo-mark">К</div>
+          <div className="brand-mark">К</div>
           <h1 className="login-title">{t.appName}</h1>
           <p className="login-sub">{t.tagline}</p>
         </div>

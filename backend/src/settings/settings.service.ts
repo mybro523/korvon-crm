@@ -6,6 +6,7 @@ import { Setting } from '../entities';
 export const SETTING_KEYS = {
   TELEGRAM_BOT_TOKEN: 'telegram_bot_token',
   TELEGRAM_CHAT_ID: 'telegram_chat_id',
+  TELEGRAM_BOT_USERNAME: 'telegram_bot_username',
 } as const;
 
 @Injectable()
@@ -23,10 +24,12 @@ export class SettingsService {
     await this.settingsRepo.save({ key, value });
   }
 
+  /** токен наружу не отдаём (write-only) — только признак, что он задан */
   async getAll() {
+    const token = await this.get(SETTING_KEYS.TELEGRAM_BOT_TOKEN);
     return {
-      telegramBotToken: await this.get(SETTING_KEYS.TELEGRAM_BOT_TOKEN),
-      telegramChatId: await this.get(SETTING_KEYS.TELEGRAM_CHAT_ID),
+      telegramBotTokenSet: !!token.trim(),
+      telegramBotUsername: await this.get(SETTING_KEYS.TELEGRAM_BOT_USERNAME),
     };
   }
 }

@@ -1,6 +1,7 @@
 import './polyfill';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import 'reflect-metadata';
 import { AppModule } from './app.module';
 
@@ -10,7 +11,10 @@ process.on('unhandledRejection', (reason) => {
 });
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // фото товара приходит base64-строкой в JSON — поднимаем лимит тела
+  app.useBodyParser('json', { limit: '6mb' });
 
   app.setGlobalPrefix('api');
   app.enableCors({ origin: true });

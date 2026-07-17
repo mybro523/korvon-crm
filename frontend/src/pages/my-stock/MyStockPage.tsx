@@ -3,13 +3,15 @@ import { useAuth } from '@/app/providers/AuthProvider';
 import { pointsApi } from '@/entities/point/api';
 import { PointStockRow } from '@/entities/point/types';
 import { extractError } from '@/shared/api/http';
-import { t } from '@/shared/i18n/tj';
+import { useT } from '@/shared/i18n';
 import { fmtQty } from '@/shared/lib/format';
 import { Badge, EmptyState, Spinner } from '@/shared/ui/misc';
+import { Thumb } from '@/shared/ui/Thumb';
 import { useToast } from '@/shared/ui/Toast';
 
 /** товары точки продавца */
 export function MyStockPage() {
+  const t = useT();
   const { user } = useAuth();
   const toast = useToast();
   const [stock, setStock] = useState<PointStockRow[]>([]);
@@ -58,7 +60,16 @@ export function MyStockPage() {
               <tbody>
                 {stock.map((row) => (
                   <tr key={row.productId}>
-                    <td className="td-main">{row.name}</td>
+                    <td className="td-main">
+                      <span className="td-title-row">
+                        <Thumb
+                          productId={row.productId}
+                          hasPhoto={row.hasPhoto}
+                          photoRev={row.photoRev}
+                        />
+                        {row.name}
+                      </span>
+                    </td>
                     <td data-label={t.warehouse.category}>{row.category ?? '—'}</td>
                     <td className="num" data-label={t.warehouse.quantity}>
                       {row.quantity <= 0 ? (

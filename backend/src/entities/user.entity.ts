@@ -37,6 +37,10 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
+  /** chat_id подключённого Telegram (через кнопку «Подключить бот») */
+  @Column({ type: 'varchar', nullable: true })
+  telegramChatId: string | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

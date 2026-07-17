@@ -10,16 +10,18 @@ import {
   SaleType,
 } from '@/entities/sale/types';
 import { extractError } from '@/shared/api/http';
-import { t } from '@/shared/i18n/tj';
+import { useT } from '@/shared/i18n';
 import { fmtMoney, fmtQty } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { Input, Select } from '@/shared/ui/Input';
+import { Thumb } from '@/shared/ui/Thumb';
 import { useToast } from '@/shared/ui/Toast';
 
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
 export function SaleForm() {
+  const t = useT();
   const { user } = useAuth();
   const toast = useToast();
   const isOwner = user?.role === 'OWNER';
@@ -182,6 +184,23 @@ export function SaleForm() {
           </option>
         ))}
       </Select>
+
+      {selected && (
+        <div className="sale-product-preview">
+          <Thumb
+            productId={selected.productId}
+            hasPhoto={selected.hasPhoto}
+            photoRev={selected.photoRev}
+            size={52}
+          />
+          <div>
+            <div className="sale-product-name">{selected.name}</div>
+            <div className="hint-text">
+              {fmtQty(selected.available)} {selected.unit} {t.sales.available}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* тип продажи */}
       <div className="field">

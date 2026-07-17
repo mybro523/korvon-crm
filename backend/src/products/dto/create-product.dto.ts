@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   Max,
+  MaxLength,
   Min,
 } from 'class-validator';
 import { MAX_MONEY, MAX_QTY, MSG_TOO_BIG } from '../../sales/dto/create-sale.dto';
@@ -37,4 +38,10 @@ export class CreateProductDto {
 
   @IsDateString({}, { message: 'Санаи воридот нодуруст аст' })
   arrivalDate: string;
+
+  /** data-URL (image/jpeg|png|webp) или '' для удаления */
+  @IsOptional()
+  @IsString({ message: 'Формати сурат нодуруст аст' })
+  @MaxLength(3_000_000, { message: 'Сурат хеле калон аст' })
+  photo?: string;
 }

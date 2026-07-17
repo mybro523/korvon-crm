@@ -12,7 +12,7 @@ import {
   SaleType,
 } from '@/entities/sale/types';
 import { extractError } from '@/shared/api/http';
-import { t } from '@/shared/i18n/tj';
+import { useT } from '@/shared/i18n';
 import { downloadFile } from '@/shared/lib/download';
 import { fmtDateTime, fmtMoney, fmtQty } from '@/shared/lib/format';
 import { PeriodKey, periodRange, userTimeZone } from '@/shared/lib/periods';
@@ -26,6 +26,7 @@ type PeriodOrAll = PeriodKey | 'all';
 const LIMIT = 20;
 
 export function SalesPage() {
+  const t = useT();
   const { user } = useAuth();
   const toast = useToast();
   const isOwner = user?.role === 'OWNER';

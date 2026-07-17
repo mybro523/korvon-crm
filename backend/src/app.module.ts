@@ -12,6 +12,7 @@ import { ProductsModule } from './products/products.module';
 import { SalesModule } from './sales/sales.module';
 import { SeedService } from './seed/seed.service';
 import { SettingsModule } from './settings/settings.module';
+import { TelegramModule } from './telegram/telegram.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -46,6 +47,7 @@ import { UsersModule } from './users/users.module';
     AnalyticsModule,
     NotificationsModule,
     SettingsModule,
+    TelegramModule,
     ExportModule,
   ],
   providers: [SeedService],

@@ -22,7 +22,7 @@ import {
 } from '@/entities/analytics/api';
 import { extractError } from '@/shared/api/http';
 import { CHART } from '@/shared/config';
-import { t } from '@/shared/i18n/tj';
+import { useT } from '@/shared/i18n';
 import { fmtMoney, fmtQty } from '@/shared/lib/format';
 import { PeriodKey, periodRange, userTimeZone } from '@/shared/lib/periods';
 import { Icon } from '@/shared/ui/Icon';
@@ -108,6 +108,7 @@ function fillDailyGaps(data: DailyPoint[], fromIso: string, toIso: string): Dail
 }
 
 export function AnalyticsPage() {
+  const t = useT();
   const toast = useToast();
   const [period, setPeriod] = useState<PeriodKey>('today');
   const [customFrom, setCustomFrom] = useState(dayjs().format('YYYY-MM-DD'));

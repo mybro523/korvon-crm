@@ -6,7 +6,7 @@ import { usersApi } from '@/entities/user/api';
 import { PublicUser } from '@/entities/user/types';
 import { UserFormModal } from '@/features/user-form/UserFormModal';
 import { extractError } from '@/shared/api/http';
-import { t } from '@/shared/i18n/tj';
+import { useT } from '@/shared/i18n';
 import { fmtDate } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/Button';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
@@ -15,6 +15,7 @@ import { Badge, EmptyState, Spinner } from '@/shared/ui/misc';
 import { useToast } from '@/shared/ui/Toast';
 
 export function UsersPage() {
+  const t = useT();
   const toast = useToast();
   const { user: me } = useAuth();
   const [users, setUsers] = useState<PublicUser[]>([]);

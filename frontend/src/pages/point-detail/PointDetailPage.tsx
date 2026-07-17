@@ -5,14 +5,16 @@ import { PointStockRow, SalesPoint, TransferRecord } from '@/entities/point/type
 import { ReturnFormModal } from '@/features/return-form/ReturnFormModal';
 import { TransferFormModal } from '@/features/transfer-form/TransferFormModal';
 import { extractError } from '@/shared/api/http';
-import { t } from '@/shared/i18n/tj';
+import { useT } from '@/shared/i18n';
 import { fmtDateTime, fmtMoney, fmtQty } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { Badge, EmptyState, Spinner } from '@/shared/ui/misc';
+import { Thumb } from '@/shared/ui/Thumb';
 import { useToast } from '@/shared/ui/Toast';
 
 export function PointDetailPage() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const toast = useToast();
   const [point, setPoint] = useState<SalesPoint | null>(null);
@@ -84,7 +86,16 @@ export function PointDetailPage() {
               <tbody>
                 {stock.map((row) => (
                   <tr key={row.productId}>
-                    <td className="td-main">{row.name}</td>
+                    <td className="td-main">
+                      <span className="td-title-row">
+                        <Thumb
+                          productId={row.productId}
+                          hasPhoto={row.hasPhoto}
+                          photoRev={row.photoRev}
+                        />
+                        {row.name}
+                      </span>
+                    </td>
                     <td data-label={t.warehouse.category}>{row.category ?? '—'}</td>
                     <td className="num" data-label={t.warehouse.quantity}>
                       {row.quantity <= 0 ? (

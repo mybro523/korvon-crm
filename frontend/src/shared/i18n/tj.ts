@@ -1,4 +1,4 @@
-/** Все тексты интерфейса — на таджикском языке */
+/** Тексты интерфейса — таджикский (язык по умолчанию) */
 export const t = {
   appName: 'Корвон',
   tagline: 'Системаи идоракунии анбор ва фурӯш',
@@ -49,6 +49,9 @@ export const t = {
     date: 'Сана',
     prev: 'Пеш',
     next: 'Баъд',
+    language: 'Забон',
+    show: 'Нишон додан',
+    hide: 'Пинҳон кардан',
   },
 
   login: {
@@ -77,10 +80,16 @@ export const t = {
     outOfStock: 'Тамом шуд',
     lowStock: 'Кам мондааст',
     inStock: 'Мавҷуд',
+    productsCount: 'мол',
     deleteConfirm: 'Молро нест мекунед? Ин амал бебозгашт аст.',
     namePlaceholder: 'мисол: Оби маъданӣ 1л',
     categoryPlaceholder: 'мисол: Нӯшокиҳо',
     unitPlaceholder: 'дона',
+    photo: 'Сурати мол',
+    uploadPhoto: 'Сурат бор кардан',
+    changePhoto: 'Иваз кардан',
+    removePhoto: 'Нест кардан',
+    photoTooBig: 'Сурат хеле калон аст',
   },
 
   points: {
@@ -202,15 +211,34 @@ export const t = {
     title: 'Танзимот',
     subtitle: 'Танзимоти система ва Telegram',
     telegramTitle: 'Огоҳиномаҳои Telegram',
-    telegramDesc: 'Пас аз ҳар фурӯш бот ба Telegram-и шумо огоҳинома мефиристад.',
+    telegramDesc:
+      'Пас аз ҳар фурӯш бот огоҳинома мефиристад: ба соҳибон — ҳар фурӯш, ба фурӯшанда — чеки фурӯши худаш.',
     botToken: 'Токени бот',
     chatId: 'Chat ID',
     test: 'Санҷиши пайвастшавӣ',
     testOk: 'Паём фиристода шуд! Telegram-ро тафтиш кунед.',
     howTitle: 'Чӣ тавр танзим кардан мумкин аст?',
     how1: 'Дар Telegram ба @BotFather нависед ва бо фармони /newbot бот созед. Токенро гиред.',
-    how2: 'Ба боти нави худ ягон паём нависед (масалан «салом»).',
-    how3: 'Chat ID-и худро тавассути @userinfobot гиред.',
-    how4: 'Токен ва Chat ID-ро дар ин ҷо сабт кунед ва тугмаи «Санҷиши пайвастшавӣ»-ро пахш кунед.',
+    how2: 'Токенро дар ин ҷо сабт кунед — система ботро худаш танзим мекунад.',
+    how3: 'Тугмаи «Пайваст кардан»-ро пахш кунед ва дар Telegram "Start"-ро зер кунед.',
+    how4: 'Ҳар корбар (соҳиб ва фурӯшандаҳо) метавонад аз меню ботро пайваст кунад.',
+    tokenSaved: 'Токен сабт шудааст',
+    tokenReplace: 'Иваз кардани токен',
+    tokenInvalid: 'Токен нодуруст аст',
+    savedNoWebhook: 'Токен сабт шуд (webhook танҳо дар сервери асосӣ фаъол мешавад)',
   },
-} as const;
+
+  telegram: {
+    connectTitle: 'Telegram-бот',
+    connectBtn: 'Пайваст кардан',
+    connected: 'Пайваст аст',
+    notConnected: 'Пайваст нест',
+    disconnect: 'Ҷудо кардан',
+    disconnected: 'Telegram ҷудо карда шуд',
+    botNotConfigured: 'Бот ҳанӯз танзим нашудааст. Ба соҳиби система муроҷиат кунед.',
+    openHint: 'Дар Telegram тугмаи «Start»-ро пахш кунед — система шуморо худаш мешиносад.',
+    bot: 'Бот',
+  },
+};
+
+export type Dict = typeof t;

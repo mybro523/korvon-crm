@@ -3,7 +3,7 @@ import { pointsApi } from '@/entities/point/api';
 import { salesApi } from '@/entities/sale/api';
 import { AvailableProduct } from '@/entities/sale/types';
 import { extractError } from '@/shared/api/http';
-import { t } from '@/shared/i18n/tj';
+import { useT } from '@/shared/i18n';
 import { fmtQty } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/Button';
 import { Input, Select } from '@/shared/ui/Input';
@@ -18,6 +18,7 @@ interface Props {
 
 /** передача товара со склада в точку */
 export function TransferFormModal({ pointId, onClose, onDone }: Props) {
+  const t = useT();
   const toast = useToast();
   const [products, setProducts] = useState<AvailableProduct[]>([]);
   const [productId, setProductId] = useState('');

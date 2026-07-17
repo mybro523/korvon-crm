@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { t } from '../i18n/tj';
+import { useT } from '../i18n';
 import { Button } from './Button';
 import { Icon } from './Icon';
 
@@ -12,6 +12,7 @@ export function Spinner() {
 }
 
 export function EmptyState({ text, icon = 'box' }: { text?: string; icon?: string }) {
+  const t = useT();
   return (
     <div className="empty-state">
       <Icon name={icon} size={34} />
@@ -38,6 +39,7 @@ interface PaginationProps {
 }
 
 export function Pagination({ page, total, limit, onChange }: PaginationProps) {
+  const t = useT();
   const pages = Math.max(1, Math.ceil(total / limit));
   if (pages <= 1) return null;
   return (

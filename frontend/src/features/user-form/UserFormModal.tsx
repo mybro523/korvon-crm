@@ -3,7 +3,7 @@ import { SalesPoint } from '@/entities/point/types';
 import { usersApi } from '@/entities/user/api';
 import { PublicUser, UserRole } from '@/entities/user/types';
 import { extractError } from '@/shared/api/http';
-import { t } from '@/shared/i18n/tj';
+import { useT } from '@/shared/i18n';
 import { Button } from '@/shared/ui/Button';
 import { Input, PasswordInput, Select } from '@/shared/ui/Input';
 import { Modal } from '@/shared/ui/Modal';
@@ -17,6 +17,7 @@ interface Props {
 }
 
 export function UserFormModal({ user, points, onClose, onSaved }: Props) {
+  const t = useT();
   const toast = useToast();
   const [fullName, setFullName] = useState(user?.fullName ?? '');
   const [username, setUsername] = useState(user?.username ?? '');

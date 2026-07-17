@@ -2,7 +2,7 @@ import { FormEvent, useState } from 'react';
 import { pointsApi } from '@/entities/point/api';
 import { PointStockRow } from '@/entities/point/types';
 import { extractError } from '@/shared/api/http';
-import { t } from '@/shared/i18n/tj';
+import { useT } from '@/shared/i18n';
 import { fmtQty } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
@@ -18,6 +18,7 @@ interface Props {
 
 /** возврат товара из точки на склад */
 export function ReturnFormModal({ pointId, row, onClose, onDone }: Props) {
+  const t = useT();
   const toast = useToast();
   const [quantity, setQuantity] = useState(String(row.quantity));
   const [saving, setSaving] = useState(false);

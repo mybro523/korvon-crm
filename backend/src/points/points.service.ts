@@ -111,6 +111,8 @@ export class PointsService {
         category: r.product.category,
         unit: r.product.unit,
         quantity: r.quantity,
+        hasPhoto: r.product.hasPhoto,
+        photoRev: r.product.photoRev,
         ...(user.role === 'OWNER' ? { costPrice: r.product.costPrice } : {}),
       }))
       .sort((a, b) => a.name.localeCompare(b.name, 'tg'));

@@ -1,5 +1,5 @@
 import { ReactNode, useEffect } from 'react';
-import { t } from '../i18n/tj';
+import { useT } from '../i18n';
 import { Icon } from './Icon';
 
 interface ModalProps {
@@ -10,6 +10,7 @@ interface ModalProps {
 }
 
 export function Modal({ title, onClose, children, width = 540 }: ModalProps) {
+  const t = useT();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();

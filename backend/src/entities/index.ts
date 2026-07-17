@@ -6,6 +6,7 @@ export { Transfer, TransferDirection } from './transfer.entity';
 export { Sale, SaleType, PaymentMethod, SaleSource } from './sale.entity';
 export { Notification } from './notification.entity';
 export { Setting } from './setting.entity';
+export { TelegramLinkCode } from './telegram-link-code.entity';
 
 import { User } from './user.entity';
 import { SalesPoint } from './sales-point.entity';
@@ -15,6 +16,7 @@ import { Transfer } from './transfer.entity';
 import { Sale } from './sale.entity';
 import { Notification } from './notification.entity';
 import { Setting } from './setting.entity';
+import { TelegramLinkCode } from './telegram-link-code.entity';
 
 export const ALL_ENTITIES = [
   User,
@@ -25,4 +27,5 @@ export const ALL_ENTITIES = [
   Sale,
   Notification,
   Setting,
+  TelegramLinkCode,
 ];

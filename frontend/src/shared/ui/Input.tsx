@@ -1,4 +1,5 @@
 import { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, useState } from 'react';
+import { useT } from '../i18n';
 import { Icon } from './Icon';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -18,6 +19,7 @@ export function Input({ label, error, className, ...rest }: InputProps) {
 
 /** поле пароля с «глазком» показать/скрыть */
 export function PasswordInput({ label, error, className, ...rest }: InputProps) {
+  const t = useT();
   const [visible, setVisible] = useState(false);
   return (
     <div className="field">
@@ -33,7 +35,7 @@ export function PasswordInput({ label, error, className, ...rest }: InputProps) 
           className="password-toggle"
           onClick={() => setVisible((v) => !v)}
           tabIndex={-1}
-          aria-label={visible ? 'Пинҳон кардан' : 'Нишон додан'}
+          aria-label={visible ? t.common.hide : t.common.show}
         >
           <Icon name={visible ? 'eye-off' : 'eye'} size={19} />
         </button>

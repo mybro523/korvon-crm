@@ -2,11 +2,13 @@ import { FormEvent, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { extractError } from '@/shared/api/http';
-import { t } from '@/shared/i18n/tj';
+import { useT } from '@/shared/i18n';
 import { Button } from '@/shared/ui/Button';
 import { Input, PasswordInput } from '@/shared/ui/Input';
+import { LangSwitch } from '@/shared/ui/LangSwitch';
 
 export function LoginPage() {
+  const t = useT();
   const { user, login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -31,6 +33,9 @@ export function LoginPage() {
   return (
     <div className="login-page">
       <div className="login-card">
+        <div className="login-lang">
+          <LangSwitch compact />
+        </div>
         <div className="login-logo">
           <div className="brand-mark">К</div>
           <h1 className="login-title">{t.appName}</h1>

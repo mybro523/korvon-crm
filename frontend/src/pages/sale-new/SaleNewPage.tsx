@@ -1,7 +1,8 @@
 import { SaleForm } from '@/features/sale-form/SaleForm';
-import { t } from '@/shared/i18n/tj';
+import { useT } from '@/shared/i18n';
 
 export function SaleNewPage() {
+  const t = useT();
   return (
     <>
       <div className="page-header">

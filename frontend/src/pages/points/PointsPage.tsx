@@ -4,7 +4,7 @@ import { pointsApi } from '@/entities/point/api';
 import { SalesPoint } from '@/entities/point/types';
 import { PointFormModal } from '@/features/point-form/PointFormModal';
 import { extractError } from '@/shared/api/http';
-import { t } from '@/shared/i18n/tj';
+import { useT } from '@/shared/i18n';
 import { Button } from '@/shared/ui/Button';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { Icon } from '@/shared/ui/Icon';
@@ -12,6 +12,7 @@ import { EmptyState, Spinner } from '@/shared/ui/misc';
 import { useToast } from '@/shared/ui/Toast';
 
 export function PointsPage() {
+  const t = useT();
   const toast = useToast();
   const navigate = useNavigate();
   const [points, setPoints] = useState<SalesPoint[]>([]);

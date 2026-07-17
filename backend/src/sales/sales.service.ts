@@ -17,6 +17,7 @@ import {
   SalesPoint,
   User,
 } from '../entities';
+import { SETTING_KEYS, SettingsService } from '../settings/settings.service';
 import { TelegramService } from '../settings/telegram.service';
 import { CreateSaleDto } from './dto/create-sale.dto';
 import { QuerySalesDto } from './dto/query-sales.dto';
@@ -29,8 +30,10 @@ export class SalesService {
     @InjectRepository(Sale) private readonly salesRepo: Repository<Sale>,
     @InjectRepository(Product) private readonly productsRepo: Repository<Product>,
     @InjectRepository(PointStock) private readonly stockRepo: Repository<PointStock>,
+    @InjectRepository(User) private readonly usersRepo: Repository<User>,
     private readonly dataSource: DataSource,
     private readonly telegramService: TelegramService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   async create(user: User, dto: CreateSaleDto): Promise<Omit<Sale, 'costAtSale'>> {
@@ -131,16 +134,35 @@ export class SalesService {
     });
 
     // Telegram — после коммита, не блокирует ответ и не ломает продажу при сбое
-    this.telegramService
-      .sendMessage(buildSaleMessage(sale, true))
-      .then((r) => {
-        if (!r.ok) this.logger.warn(`Огоҳинома ба Telegram нарафт: ${r.error}`);
-      })
-      .catch((e) => {
-        this.logger.warn(`Огоҳинома ба Telegram нарафт: ${e?.message ?? e}`);
-      });
+    this.notifyTelegram(sale).catch((e) => {
+      this.logger.warn(`Огоҳинома ба Telegram нарафт: ${e?.message ?? e}`);
+    });
 
     return this.stripCost(sale);
+  }
+
+  /** уведомления: всем подключённым владельцам, продавцу — чек, плюс legacy chat id */
+  private async notifyTelegram(sale: Sale): Promise<void> {
+    const text = buildSaleMessage(sale, true);
+    const chatIds = new Set<string>();
+
+    const owners = await this.usersRepo.find({ where: { role: 'OWNER', isActive: true } });
+    for (const o of owners) {
+      if (o.telegramChatId) chatIds.add(o.telegramChatId);
+    }
+    if (sale.sellerId) {
+      const seller = await this.usersRepo.findOne({ where: { id: sale.sellerId } });
+      if (seller?.telegramChatId) chatIds.add(seller.telegramChatId);
+    }
+
+    // legacy: chat id из настроек (если задан вручную)
+    const legacy = (await this.settingsService.get(SETTING_KEYS.TELEGRAM_CHAT_ID)).trim();
+    if (legacy) chatIds.add(legacy);
+
+    for (const chatId of chatIds) {
+      const r = await this.telegramService.sendToChat(chatId, text);
+      if (!r.ok) this.logger.warn(`Telegram → ${chatId}: ${r.error}`);
+    }
   }
 
   /** себестоимость — коммерческая тайна; наружу не отдаём (аналитика считает прибыль в SQL) */
@@ -222,6 +244,8 @@ export class SalesService {
         category: p.category,
         unit: p.unit,
         available: p.quantity,
+        hasPhoto: p.hasPhoto,
+        photoRev: p.photoRev,
       }));
     }
 
@@ -241,6 +265,8 @@ export class SalesService {
         category: r.product.category,
         unit: r.product.unit,
         available: r.quantity,
+        hasPhoto: r.product.hasPhoto,
+        photoRev: r.product.photoRev,
       }))
       .sort((a, b) => a.name.localeCompare(b.name, 'tg'));
   }

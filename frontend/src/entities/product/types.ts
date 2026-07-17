@@ -6,6 +6,8 @@ export interface Product {
   costPrice: number;
   quantity: number;
   arrivalDate: string;
+  hasPhoto: boolean;
+  photoRev: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -17,4 +19,6 @@ export interface ProductPayload {
   costPrice?: number;
   quantity?: number;
   arrivalDate?: string;
+  /** data-URL для замены, '' — удалить, undefined — не менять */
+  photo?: string;
 }

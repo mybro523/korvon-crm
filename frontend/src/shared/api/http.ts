@@ -22,13 +22,15 @@ http.interceptors.response.use(
   },
 );
 
-/** извлекает человекочитаемое сообщение об ошибке (бэкенд отвечает на таджикском) */
+import { localizeServerMessage } from '../i18n';
+
+/** извлекает сообщение об ошибке; при русском интерфейсе переводит известные тексты бэка */
 export function extractError(e: unknown): string {
   if (axios.isAxiosError(e)) {
     const msg = (e.response?.data as { message?: string | string[] } | undefined)?.message;
-    if (Array.isArray(msg)) return msg[0];
-    if (typeof msg === 'string') return msg;
-    if (!e.response) return 'Сервер дастнорас аст. Пайвастшавиро тафтиш кунед';
+    if (Array.isArray(msg)) return localizeServerMessage(msg[0]);
+    if (typeof msg === 'string') return localizeServerMessage(msg);
+    if (!e.response) return localizeServerMessage('Сервер дастнорас аст. Пайвастшавиро тафтиш кунед');
   }
-  return 'Хатои номаълум рух дод';
+  return localizeServerMessage('Хатои номаълум рух дод');
 }

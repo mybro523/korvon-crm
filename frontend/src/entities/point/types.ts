@@ -13,6 +13,8 @@ export interface PointStockRow {
   category: string | null;
   unit: string;
   quantity: number;
+  hasPhoto: boolean;
+  photoRev: number;
   costPrice?: number;
 }
 

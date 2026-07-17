@@ -2,7 +2,7 @@ import { FormEvent, useState } from 'react';
 import { pointsApi } from '@/entities/point/api';
 import { SalesPoint } from '@/entities/point/types';
 import { extractError } from '@/shared/api/http';
-import { t } from '@/shared/i18n/tj';
+import { useT } from '@/shared/i18n';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { Modal } from '@/shared/ui/Modal';
@@ -15,6 +15,7 @@ interface Props {
 }
 
 export function PointFormModal({ point, onClose, onSaved }: Props) {
+  const t = useT();
   const toast = useToast();
   const [name, setName] = useState(point?.name ?? '');
   const [address, setAddress] = useState(point?.address ?? '');

@@ -5,7 +5,7 @@ import {
   NotificationsResponse,
 } from '@/entities/notification/api';
 import { extractError } from '@/shared/api/http';
-import { t } from '@/shared/i18n/tj';
+import { localizeNotification, useT } from '@/shared/i18n';
 import { fmtDateTime } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
@@ -14,17 +14,20 @@ import { useToast } from '@/shared/ui/Toast';
 
 const LIMIT = 20;
 
-/** старые уведомления могли сохраниться с эмодзи — вычищаем при показе;
- * строку «Сана ва вақт» убираем — дата и так показана под сообщением */
-const stripEmoji = (s: string) =>
-  s
-    .replace(/[\p{Extended_Pictographic}️]/gu, '')
-    .replace(/^ +/gm, '')
-    .split('\n')
-    .filter((line) => !line.startsWith('Сана ва вақт'))
-    .join('\n');
+/** чистим уведомление к показу: убираем эмодзи и строку даты (она показана отдельно),
+ * затем переводим текст на язык интерфейса */
+const cleanMessage = (s: string) =>
+  localizeNotification(
+    s
+      .replace(/[\p{Extended_Pictographic}️]/gu, '')
+      .replace(/^ +/gm, '')
+      .split('\n')
+      .filter((line) => !line.startsWith('Сана ва вақт'))
+      .join('\n'),
+  );
 
 export function NotificationsPage() {
+  const t = useT();
   const toast = useToast();
   const [data, setData] = useState<NotificationsResponse | null>(null);
   const [page, setPage] = useState(1);
@@ -104,7 +107,7 @@ export function NotificationsPage() {
               >
                 {!n.isRead && <div className="notif-dot" />}
                 <div>
-                  <div className="notif-message">{stripEmoji(n.message)}</div>
+                  <div className="notif-message">{cleanMessage(n.message)}</div>
                   <div className="notif-date">{fmtDateTime(n.createdAt)}</div>
                 </div>
               </div>

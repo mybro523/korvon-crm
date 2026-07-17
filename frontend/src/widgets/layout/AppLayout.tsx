@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { notificationsApi } from '@/entities/notification/api';
-import { t } from '@/shared/i18n/tj';
+import { TelegramConnect } from '@/features/telegram/TelegramConnect';
+import { useT } from '@/shared/i18n';
 import { Icon } from '@/shared/ui/Icon';
+import { LangSwitch } from '@/shared/ui/LangSwitch';
 
 interface NavEntry {
   to: string;
@@ -13,6 +15,7 @@ interface NavEntry {
 }
 
 export function AppLayout() {
+  const t = useT();
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -114,6 +117,13 @@ export function AppLayout() {
             </NavLink>
           ))}
         </nav>
+        <div className="sidebar-extra">
+          <TelegramConnect variant="sheet" />
+          <div className="sheet-lang">
+            <span className="sheet-lang-label">{t.common.language}</span>
+            <LangSwitch />
+          </div>
+        </div>
         <div className="sidebar-user">
           <div className="avatar">{initials}</div>
           <div className="sidebar-user-info">
@@ -230,6 +240,11 @@ export function AppLayout() {
                 {item.badge ? <span className="count-badge">{item.badge}</span> : null}
               </button>
             ))}
+            <TelegramConnect variant="sheet" />
+            <div className="sheet-lang">
+              <span className="sheet-lang-label">{t.common.language}</span>
+              <LangSwitch />
+            </div>
             <button className="sheet-link danger" onClick={logout}>
               <Icon name="logout" size={20} />
               <span>{t.nav.logout}</span>

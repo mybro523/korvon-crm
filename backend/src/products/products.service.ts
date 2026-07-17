@@ -44,7 +44,9 @@ export class ProductsService {
       quantity: round3(dto.quantity),
       arrivalDate: dto.arrivalDate.slice(0, 10),
     });
-    return this.productsRepo.save(product);
+    this.applyPhoto(product, dto.photo);
+    const saved = await this.productsRepo.save(product);
+    return this.stripPhoto(saved);
   }
 
   async update(id: string, dto: UpdateProductDto) {
@@ -57,8 +59,51 @@ export class ProductsService {
     if (dto.costPrice !== undefined) product.costPrice = round2(dto.costPrice);
     if (dto.quantity !== undefined) product.quantity = round3(dto.quantity);
     if (dto.arrivalDate !== undefined) product.arrivalDate = dto.arrivalDate.slice(0, 10);
+    this.applyPhoto(product, dto.photo);
 
-    return this.productsRepo.save(product);
+    const saved = await this.productsRepo.save(product);
+    return this.stripPhoto(saved);
+  }
+
+  /** dto.photo: undefined — не трогать; '' — удалить; data:image/...;base64,... — заменить */
+  private applyPhoto(product: Product, photo?: string) {
+    if (photo === undefined) return;
+    if (photo === '') {
+      product.photo = null;
+      product.photoMime = null;
+      product.hasPhoto = false;
+      product.photoRev = (product.photoRev ?? 0) + 1;
+      return;
+    }
+    const m = photo.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
+    if (!m) throw new BadRequestException('Формати сурат нодуруст аст');
+    const buf = Buffer.from(m[2], 'base64');
+    if (buf.length > 2 * 1024 * 1024) {
+      throw new BadRequestException('Сурат хеле калон аст');
+    }
+    product.photo = buf;
+    product.photoMime = m[1];
+    product.hasPhoto = true;
+    product.photoRev = (product.photoRev ?? 0) + 1;
+  }
+
+  /** байты фото не возвращаем в JSON-ответах */
+  private stripPhoto(product: Product): Omit<Product, 'photo'> {
+    const { photo: _photo, ...rest } = product;
+    return rest as Omit<Product, 'photo'>;
+  }
+
+  /** для публичного эндпоинта отдачи картинки */
+  async getPhoto(id: string): Promise<{ buf: Buffer; mime: string }> {
+    const row = await this.productsRepo
+      .createQueryBuilder('p')
+      .select(['p.id'])
+      .addSelect('p.photo')
+      .addSelect('p.photoMime')
+      .where('p.id = :id', { id })
+      .getOne();
+    if (!row || !row.photo) throw new NotFoundException('Сурат ёфт нашуд');
+    return { buf: row.photo, mime: row.photoMime ?? 'image/jpeg' };
   }
 
   async remove(id: string) {

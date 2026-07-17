@@ -31,6 +31,20 @@ export class Product {
   @Column({ type: 'date' })
   arrivalDate: string;
 
+  /** фото: байты не грузятся в списках (select: false), отдаются отдельным эндпоинтом */
+  @Column({ type: 'bytea', nullable: true, select: false })
+  photo: Buffer | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  photoMime: string | null;
+
+  @Column({ default: false })
+  hasPhoto: boolean;
+
+  /** версия фото — для сброса кэша браузера */
+  @Column({ type: 'int', default: 0 })
+  photoRev: number;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 

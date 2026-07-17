@@ -4,16 +4,18 @@ import { productsApi } from '@/entities/product/api';
 import { Product } from '@/entities/product/types';
 import { ProductFormModal } from '@/features/product-form/ProductFormModal';
 import { extractError } from '@/shared/api/http';
-import { t } from '@/shared/i18n/tj';
+import { useT } from '@/shared/i18n';
 import { downloadFile } from '@/shared/lib/download';
 import { fmtDate, fmtMoney, fmtQty } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/Button';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { Icon } from '@/shared/ui/Icon';
+import { Thumb } from '@/shared/ui/Thumb';
 import { Badge, EmptyState, Spinner } from '@/shared/ui/misc';
 import { useToast } from '@/shared/ui/Toast';
 
 export function WarehousePage() {
+  const t = useT();
   const toast = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -162,7 +164,12 @@ export function WarehousePage() {
               <tbody>
                 {products.map((p) => (
                   <tr key={p.id}>
-                    <td className="td-main">{p.name}</td>
+                    <td className="td-main">
+                      <span className="td-title-row">
+                        <Thumb productId={p.id} hasPhoto={p.hasPhoto} photoRev={p.photoRev} />
+                        {p.name}
+                      </span>
+                    </td>
                     <td data-label={t.warehouse.category}>{p.category ?? '—'}</td>
                     <td className="num" data-label={t.warehouse.costPrice}>
                       {fmtMoney(p.costPrice)}
@@ -211,7 +218,7 @@ export function WarehousePage() {
               <tfoot>
                 <tr>
                   <td colSpan={4} data-label={t.common.total}>
-                    {products.length} мол
+                    {products.length} {t.warehouse.productsCount}
                   </td>
                   <td className="num" data-label={t.warehouse.warehouseValue}>
                     {fmtMoney(totalValue)}

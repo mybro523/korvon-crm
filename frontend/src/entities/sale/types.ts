@@ -34,6 +34,8 @@ export interface AvailableProduct {
   category: string | null;
   unit: string;
   available: number;
+  hasPhoto: boolean;
+  photoRev: number;
 }
 
 export interface CreateSalePayload {

@@ -10,6 +10,7 @@ export function publicUser(user: User) {
     pointId: user.pointId ?? null,
     point: user.point ? { id: user.point.id, name: user.point.name } : null,
     isActive: user.isActive,
+    telegramConnected: !!user.telegramChatId,
     createdAt: user.createdAt,
   };
 }

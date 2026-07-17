@@ -17,7 +17,7 @@ export function fmtDateTime(d: Date, tz: string = DISPLAY_TZ): string {
   }).format(d);
 }
 
-const escapeHtml = (s: string): string =>
+export const escapeHtml = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export const PAYMENT_LABEL: Record<string, string> = {

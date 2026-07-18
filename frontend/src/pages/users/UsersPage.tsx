@@ -1,52 +1,44 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { usersApi } from '@/entities/user/api';
 import { PublicUser } from '@/entities/user/types';
 import { UserFormModal } from '@/features/user-form/UserFormModal';
 import { extractError } from '@/shared/api/http';
 import { useT } from '@/shared/i18n';
+import { useCachedQuery } from '@/shared/lib/cache';
 import { fmtDate } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/Button';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { Icon } from '@/shared/ui/Icon';
-import { Badge, EmptyState, Spinner } from '@/shared/ui/misc';
+import { Badge, EmptyState, TableSkeleton } from '@/shared/ui/misc';
 import { useToast } from '@/shared/ui/Toast';
 
 export function UsersPage() {
   const t = useT();
   const toast = useToast();
   const { user: me } = useAuth();
-  const [users, setUsers] = useState<PublicUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: users, loading, refetch, mutate } = useCachedQuery<PublicUser[]>(
+    'users',
+    () => usersApi.list(),
+  );
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<PublicUser | null>(null);
   const [deleting, setDeleting] = useState<PublicUser | null>(null);
-  const [deleteBusy, setDeleteBusy] = useState(false);
 
-  const load = useCallback(() => {
-    usersApi
-      .list()
-      .then(setUsers)
-      .catch((e) => toast.error(extractError(e)))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const list = users ?? [];
 
-  useEffect(load, [load]);
-
-  const onDelete = async () => {
+  const onDelete = () => {
     if (!deleting) return;
-    setDeleteBusy(true);
-    try {
-      await usersApi.remove(deleting.id);
-      toast.success(t.common.deleted);
-      setDeleting(null);
-      load();
-    } catch (e) {
-      toast.error(extractError(e));
-    } finally {
-      setDeleteBusy(false);
-    }
+    const id = deleting.id;
+    const prev = mutate((l) => (l ?? []).filter((u) => u.id !== id)); // оптимистично
+    setDeleting(null);
+    usersApi
+      .remove(id)
+      .then(() => toast.success(t.common.deleted))
+      .catch((e) => {
+        mutate(() => prev ?? []); // откат
+        toast.error(extractError(e));
+      });
   };
 
   return (
@@ -72,8 +64,8 @@ export function UsersPage() {
 
       <div className="card">
         {loading ? (
-          <Spinner />
-        ) : users.length === 0 ? (
+          <TableSkeleton rows={4} />
+        ) : list.length === 0 ? (
           <EmptyState icon="users" />
         ) : (
           <div className="table-wrap">
@@ -89,7 +81,7 @@ export function UsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => (
+                {list.map((u) => (
                   <tr key={u.id}>
                     <td className="td-main">{u.fullName}</td>
                     <td data-label={t.users.username}>@{u.username}</td>
@@ -145,11 +137,7 @@ export function UsersPage() {
       </div>
 
       {formOpen && (
-        <UserFormModal
-          user={editing}
-          onClose={() => setFormOpen(false)}
-          onSaved={load}
-        />
+        <UserFormModal user={editing} onClose={() => setFormOpen(false)} onDone={refetch} />
       )}
       {deleting && (
         <ConfirmDialog
@@ -157,7 +145,6 @@ export function UsersPage() {
           message={`${t.users.deleteConfirm} (${deleting.fullName})`}
           onConfirm={onDelete}
           onCancel={() => setDeleting(null)}
-          loading={deleteBusy}
         />
       )}
     </>

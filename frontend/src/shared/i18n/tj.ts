@@ -84,8 +84,8 @@ export const t = {
     inStock: 'Мавҷуд',
     productsCount: 'мол',
     deleteConfirm: 'Молро нест мекунед? Ин амал бебозгашт аст.',
-    namePlaceholder: 'мисол: Оби маъданӣ 1л',
-    categoryPlaceholder: 'мисол: Нӯшокиҳо',
+    namePlaceholder: 'мисол: Куртаи мардона',
+    categoryPlaceholder: 'мисол: Куртка',
     unitPlaceholder: 'дона',
     photo: 'Сурати мол',
     uploadPhoto: 'Сурат бор кардан',
@@ -180,6 +180,11 @@ export const t = {
     wholesale: 'Яклухт',
     retail: 'Чакана',
     pcs: 'адад',
+    margin: 'Маржа',
+    avgCheck: 'Миёнаи чек',
+    profitByProduct: 'Фоида аз рӯи молҳо',
+    clickHint: 'Барои тафсилот зер кунед',
+    allSales: 'Ҳамаи фурӯшҳо',
   },
 
   users: {

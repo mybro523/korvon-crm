@@ -1,87 +1,65 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import { productsApi } from '@/entities/product/api';
 import { Product } from '@/entities/product/types';
 import { ProductFormModal } from '@/features/product-form/ProductFormModal';
 import { extractError } from '@/shared/api/http';
 import { useT } from '@/shared/i18n';
+import { useCachedQuery } from '@/shared/lib/cache';
+import { mergeCategories } from '@/shared/lib/categories';
 import { downloadFile } from '@/shared/lib/download';
 import { fmtMoney, fmtQty } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/Button';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { Icon } from '@/shared/ui/Icon';
 import { Thumb } from '@/shared/ui/Thumb';
-import { Badge, EmptyState, Spinner } from '@/shared/ui/misc';
+import { Badge, EmptyState, TableSkeleton } from '@/shared/ui/misc';
 import { useToast } from '@/shared/ui/Toast';
 
 export function WarehousePage() {
   const t = useT();
   const toast = useToast();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
   const [search, setSearch] = useState('');
+  const [debounced, setDebounced] = useState('');
   const [category, setCategory] = useState('');
-  const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState<Product | null>(null);
-  const [deleteBusy, setDeleteBusy] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
 
+  // дебаунс поиска
   useEffect(() => {
-    setLoading(true);
-    let stale = false; // защита от гонки при быстром вводе в поиск
-    const timer = setTimeout(() => {
-      productsApi
-        .list(search, category)
-        .then((p) => {
-          if (!stale) setProducts(p);
-        })
-        .catch((e) => {
-          if (!stale) toast.error(extractError(e));
-        })
-        .finally(() => {
-          if (!stale) setLoading(false);
-        });
-    }, 300);
-    return () => {
-      stale = true;
-      clearTimeout(timer);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, category, reloadKey]);
+    const tm = setTimeout(() => setDebounced(search), 300);
+    return () => clearTimeout(tm);
+  }, [search]);
 
-  const loadCategories = useCallback(() => {
-    productsApi.categories().then(setCategories).catch(() => {});
-  }, []);
+  const key = `products:${debounced}:${category}`;
+  const { data: products, loading, refetch, mutate } = useCachedQuery<Product[]>(key, () =>
+    productsApi.list(debounced, category),
+  );
 
-  useEffect(loadCategories, [loadCategories]);
+  const cats = useCachedQuery<string[]>('categories', () => productsApi.categories());
+  const categories = cats.data ?? [];
 
-  const onSaved = () => {
-    setReloadKey((k) => k + 1);
-    loadCategories();
-  };
-
-  const onDelete = async () => {
+  const onDelete = () => {
     if (!deleting) return;
-    setDeleteBusy(true);
-    try {
-      await productsApi.remove(deleting.id);
-      toast.success(t.common.deleted);
-      setDeleting(null);
-      onSaved();
-    } catch (e) {
-      toast.error(extractError(e));
-    } finally {
-      setDeleteBusy(false);
-    }
+    const id = deleting.id;
+    const prev = mutate((list) => (list ?? []).filter((p) => p.id !== id)); // оптимистично убираем
+    setDeleting(null);
+    productsApi
+      .remove(id)
+      .then(() => toast.success(t.common.deleted))
+      // другие фильтры/поиски ревалидируются сами при следующем заходе (SWR)
+      .catch((e) => {
+        mutate(() => prev ?? []); // откат
+        toast.error(extractError(e));
+      });
   };
 
   const onExport = async () => {
     setExporting(true);
     try {
-      await downloadFile('/export/warehouse', `anbor-${dayjs().format('YYYY-MM-DD')}.xlsx`);
+      await downloadFile('/export/warehouse', `tovar-${dayjs().format('YYYY-MM-DD')}.xlsx`);
     } catch (e) {
       toast.error(extractError(e));
     } finally {
@@ -89,7 +67,8 @@ export function WarehousePage() {
     }
   };
 
-  const totalValue = products.reduce((acc, p) => acc + p.costPrice * p.quantity, 0);
+  const list = products ?? [];
+  const totalValue = list.reduce((acc, p) => acc + p.costPrice * p.quantity, 0);
 
   return (
     <>
@@ -132,7 +111,7 @@ export function WarehousePage() {
             onChange={(e) => setCategory(e.target.value)}
           >
             <option value="">{t.warehouse.allCategories}</option>
-            {categories.map((c) => (
+            {mergeCategories(categories).map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
@@ -143,8 +122,8 @@ export function WarehousePage() {
 
       <div className="card">
         {loading ? (
-          <Spinner />
-        ) : products.length === 0 ? (
+          <TableSkeleton rows={5} />
+        ) : list.length === 0 ? (
           <EmptyState />
         ) : (
           <div className="table-wrap">
@@ -162,7 +141,7 @@ export function WarehousePage() {
                 </tr>
               </thead>
               <tbody>
-                {products.map((p) => (
+                {list.map((p) => (
                   <tr key={p.id}>
                     <td className="td-main">
                       <span className="td-title-row">
@@ -220,7 +199,7 @@ export function WarehousePage() {
               <tfoot>
                 <tr>
                   <td colSpan={4} data-label={t.common.total}>
-                    {products.length} {t.warehouse.productsCount}
+                    {list.length} {t.warehouse.productsCount}
                   </td>
                   <td className="num" data-label={t.warehouse.warehouseValue}>
                     {fmtMoney(totalValue)}
@@ -238,7 +217,10 @@ export function WarehousePage() {
           product={editing}
           categories={categories}
           onClose={() => setFormOpen(false)}
-          onSaved={onSaved}
+          onDone={() => {
+            refetch(); // текущий список; другие фильтры ревалидируются при заходе (SWR)
+            cats.refetch();
+          }}
         />
       )}
       {deleting && (
@@ -247,7 +229,6 @@ export function WarehousePage() {
           message={`${t.warehouse.deleteConfirm} (${deleting.name})`}
           onConfirm={onDelete}
           onCancel={() => setDeleting(null)}
-          loading={deleteBusy}
         />
       )}
     </>

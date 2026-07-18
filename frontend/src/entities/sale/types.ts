@@ -53,4 +53,5 @@ export interface SalesFilter {
   paymentMethod?: PaymentMethod;
   saleType?: SaleType;
   search?: string;
+  productName?: string;
 }

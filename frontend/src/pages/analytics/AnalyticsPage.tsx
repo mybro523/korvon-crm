@@ -20,16 +20,22 @@ import {
   SellerStat,
   TopProduct,
 } from '@/entities/analytics/api';
-import { extractError } from '@/shared/api/http';
+import { Detail, DetailModal } from '@/features/analytics-detail/DetailModal';
 import { CHART } from '@/shared/config';
 import { useT } from '@/shared/i18n';
+import { useCachedQuery } from '@/shared/lib/cache';
 import { fmtMoney, fmtQty } from '@/shared/lib/format';
 import { PeriodKey, periodRange, userTimeZone } from '@/shared/lib/periods';
 import { Icon } from '@/shared/ui/Icon';
-import { EmptyState, Spinner } from '@/shared/ui/misc';
-import { useToast } from '@/shared/ui/Toast';
+import { AnalyticsSkeleton, EmptyState } from '@/shared/ui/misc';
 
-/* тултип в стиле дизайн-системы */
+interface Bundle {
+  summary: AnalyticsSummary;
+  daily: DailyPoint[];
+  top: TopProduct[];
+  bySellers: SellerStat[];
+}
+
 function ChartTooltip({
   active,
   payload,
@@ -37,7 +43,7 @@ function ChartTooltip({
   money,
 }: {
   active?: boolean;
-  payload?: { name?: string; value?: number | string; payload?: Record<string, unknown> }[];
+  payload?: { name?: string; value?: number | string }[];
   label?: string;
   money?: boolean;
 }) {
@@ -73,17 +79,20 @@ function StatTile({
   value,
   sub,
   icon,
+  onClick,
 }: {
   label: string;
   value: string;
   sub?: string;
   icon: string;
+  onClick?: () => void;
 }) {
   return (
-    <div className="card stat-tile">
+    <div className={`card stat-tile ${onClick ? 'clickable' : ''}`} onClick={onClick}>
       <div className="stat-head">
         <Icon name={icon} size={15} />
         <div className="stat-label">{label}</div>
+        {onClick && <Icon name="right" size={15} className="stat-arrow" />}
       </div>
       <div className="stat-value">{value}</div>
       {sub && <div className="stat-sub">{sub}</div>}
@@ -109,44 +118,29 @@ function fillDailyGaps(data: DailyPoint[], fromIso: string, toIso: string): Dail
 
 export function AnalyticsPage() {
   const t = useT();
-  const toast = useToast();
   const [period, setPeriod] = useState<PeriodKey>('today');
   const [customFrom, setCustomFrom] = useState(dayjs().format('YYYY-MM-DD'));
   const [customTo, setCustomTo] = useState(dayjs().format('YYYY-MM-DD'));
-  const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
-  const [daily, setDaily] = useState<DailyPoint[]>([]);
-  const [top, setTop] = useState<TopProduct[]>([]);
-  const [bySellers, setBySellers] = useState<SellerStat[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [detail, setDetail] = useState<Detail | null>(null);
 
-  useEffect(() => {
-    const { from, to } = periodRange(period, customFrom, customTo);
+  const { from, to } = periodRange(period, customFrom, customTo);
+  const cacheKey = `analytics:${from}:${to}`;
+
+  const { data, loading } = useCachedQuery<Bundle>(cacheKey, async () => {
     const params = { from, to, tz: userTimeZone() };
-    setLoading(true);
-    let stale = false; // защита от гонки при быстрой смене периода
-    Promise.all([
+    const [summary, daily, top, bySellers] = await Promise.all([
       analyticsApi.summary(params),
       analyticsApi.daily(params),
-      analyticsApi.topProducts({ ...params, limit: 10 }),
+      // берём до 50 для полноты «прибыли по товарам»; график покажет топ-10
+      analyticsApi.topProducts({ ...params, limit: 50 }),
       analyticsApi.bySellers(params),
-    ])
-      .then(([s, d, tp, bs]) => {
-        if (stale) return;
-        setSummary(s);
-        setDaily(fillDailyGaps(d, from, to));
-        setTop(tp);
-        setBySellers(bs);
-      })
-      .catch((e) => {
-        if (!stale) toast.error(extractError(e));
-      })
-      .finally(() => {
-        if (!stale) setLoading(false);
-      });
-    return () => {
-      stale = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ]);
+    return { summary, daily: fillDailyGaps(daily, from, to), top, bySellers };
+  });
+
+  // закрываем модалку детализации при смене периода
+  useEffect(() => {
+    setDetail(null);
   }, [period, customFrom, customTo]);
 
   const periods: { key: PeriodKey; label: string }[] = [
@@ -156,10 +150,19 @@ export function AnalyticsPage() {
     { key: 'custom', label: t.sales.custom },
   ];
 
+  const summary = data?.summary;
+  const daily = data?.daily ?? [];
+  const top = data?.top ?? [];
+  const topChart = top.slice(0, 10); // график — топ-10; в модалку прибыли идёт весь top
+  const bySellers = data?.bySellers ?? [];
   const hasData = (summary?.salesCount ?? 0) > 0;
   const paymentData = summary
     ? [{ name: t.sales.payment, cash: summary.cashAmount, card: summary.cardAmount }]
     : [];
+
+  const avgCheck = summary && summary.salesCount > 0 ? summary.totalAmount / summary.salesCount : 0;
+  const marginPct =
+    summary && summary.totalAmount > 0 ? (summary.totalProfit / summary.totalAmount) * 100 : 0;
 
   return (
     <>
@@ -204,7 +207,7 @@ export function AnalyticsPage() {
       </div>
 
       {loading ? (
-        <Spinner />
+        <AnalyticsSkeleton />
       ) : !summary ? (
         <EmptyState />
       ) : (
@@ -215,26 +218,68 @@ export function AnalyticsPage() {
               label={t.analytics.salesCount}
               value={String(summary.salesCount)}
               sub={`${t.analytics.wholesale}: ${summary.wholesaleCount} · ${t.analytics.retail}: ${summary.retailCount}`}
+              onClick={
+                hasData
+                  ? () => setDetail({ kind: 'sales', title: t.analytics.allSales })
+                  : undefined
+              }
             />
             <StatTile
               icon="chart"
               label={t.analytics.totalAmount}
               value={fmtMoney(summary.totalAmount)}
-              sub={`${t.analytics.profit}: ${fmtMoney(summary.totalProfit)}`}
+              sub={`${t.analytics.avgCheck}: ${fmtMoney(avgCheck)}`}
+              onClick={
+                hasData
+                  ? () => setDetail({ kind: 'sales', title: t.analytics.totalAmount })
+                  : undefined
+              }
+            />
+            <StatTile
+              icon="box"
+              label={t.analytics.profit}
+              value={fmtMoney(summary.totalProfit)}
+              sub={`${t.analytics.margin}: ${marginPct.toFixed(1)}%`}
+              onClick={
+                hasData
+                  ? () =>
+                      setDetail({ kind: 'products', title: t.analytics.profitByProduct, mode: 'profit' })
+                  : undefined
+              }
             />
             <StatTile
               icon="cash"
               label={t.analytics.cashSales}
               value={fmtMoney(summary.cashAmount)}
               sub={`${summary.cashCount} ${t.sales.salesCount}`}
+              onClick={
+                summary.cashCount > 0
+                  ? () => setDetail({ kind: 'sales', title: t.analytics.cashSales, paymentMethod: 'CASH' })
+                  : undefined
+              }
             />
             <StatTile
               icon="card"
               label={t.analytics.cardSales}
               value={fmtMoney(summary.cardAmount)}
               sub={`${summary.cardCount} ${t.sales.salesCount}`}
+              onClick={
+                summary.cardCount > 0
+                  ? () => setDetail({ kind: 'sales', title: t.analytics.cardSales, paymentMethod: 'CARD' })
+                  : undefined
+              }
             />
-            <StatTile icon="box" label={t.analytics.itemsSold} value={fmtQty(summary.itemsSold)} />
+            <StatTile
+              icon="box"
+              label={t.analytics.itemsSold}
+              value={fmtQty(summary.itemsSold)}
+              onClick={
+                hasData
+                  ? () =>
+                      setDetail({ kind: 'products', title: t.analytics.topProducts, mode: 'quantity' })
+                  : undefined
+              }
+            />
           </div>
 
           {!hasData ? (
@@ -286,9 +331,12 @@ export function AnalyticsPage() {
                 </ResponsiveContainer>
               </div>
 
-              {/* продажи по продавцам */}
+              {/* продажи по продавцам — клик по бару открывает детализацию */}
               <div className="card chart-card">
                 <h3 className="card-title">{t.analytics.bySellersChart}</h3>
+                <p className="hint-text" style={{ marginTop: -6, marginBottom: 6 }}>
+                  {t.analytics.clickHint}
+                </p>
                 <ResponsiveContainer width="100%" height={Math.max(200, bySellers.length * 46 + 40)}>
                   <BarChart
                     data={bySellers}
@@ -312,6 +360,12 @@ export function AnalyticsPage() {
                       fill={CHART.series1}
                       barSize={18}
                       radius={[0, 4, 4, 0]}
+                      cursor="pointer"
+                      onClick={(d: any) => {
+                        // у удалённого продавца нет id — детализацию по нему не открываем
+                        if (!d?.sellerId) return;
+                        setDetail({ kind: 'sales', title: d.name, sellerId: d.sellerId });
+                      }}
                     >
                       <LabelList
                         dataKey="amount"
@@ -324,45 +378,55 @@ export function AnalyticsPage() {
                 </ResponsiveContainer>
               </div>
 
-              {/* топ товаров */}
+              {/* топ товаров — клик по бару открывает продажи этого товара */}
               <div className="card chart-card">
                 <h3 className="card-title">{t.analytics.topProducts}</h3>
-                {top.length === 0 ? (
+                {topChart.length === 0 ? (
                   <EmptyState text={t.analytics.noData} />
                 ) : (
-                  <ResponsiveContainer width="100%" height={Math.max(200, top.length * 40 + 40)}>
-                    <BarChart
-                      data={top}
-                      layout="vertical"
-                      margin={{ top: 4, right: 56, left: 4, bottom: 4 }}
-                    >
-                      <CartesianGrid stroke={CHART.grid} horizontal={false} />
-                      <XAxis type="number" hide />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        width={104}
-                        tick={{ fill: CHART.ink, fontSize: 11 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
-                      <Bar
-                        dataKey="quantity"
-                        name={t.analytics.itemsSold}
-                        fill={CHART.series2}
-                        barSize={16}
-                        radius={[0, 4, 4, 0]}
+                  <>
+                    <p className="hint-text" style={{ marginTop: -6, marginBottom: 6 }}>
+                      {t.analytics.clickHint}
+                    </p>
+                    <ResponsiveContainer width="100%" height={Math.max(200, topChart.length * 40 + 40)}>
+                      <BarChart
+                        data={topChart}
+                        layout="vertical"
+                        margin={{ top: 4, right: 56, left: 4, bottom: 4 }}
                       >
-                        <LabelList
-                          dataKey="quantity"
-                          position="right"
-                          formatter={(v: unknown) => fmtQty(Number(v))}
-                          style={{ fill: CHART.ink, fontSize: 11.5 }}
+                        <CartesianGrid stroke={CHART.grid} horizontal={false} />
+                        <XAxis type="number" hide />
+                        <YAxis
+                          type="category"
+                          dataKey="name"
+                          width={104}
+                          tick={{ fill: CHART.ink, fontSize: 11 }}
+                          axisLine={false}
+                          tickLine={false}
                         />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                        <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
+                        <Bar
+                          dataKey="quantity"
+                          name={t.analytics.itemsSold}
+                          fill={CHART.series2}
+                          barSize={16}
+                          radius={[0, 4, 4, 0]}
+                          cursor="pointer"
+                          onClick={(d: any) => {
+                            if (!d?.name) return;
+                            setDetail({ kind: 'sales', title: d.name, productName: d.name });
+                          }}
+                        >
+                          <LabelList
+                            dataKey="quantity"
+                            position="right"
+                            formatter={(v: unknown) => fmtQty(Number(v))}
+                            style={{ fill: CHART.ink, fontSize: 11.5 }}
+                          />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </>
                 )}
               </div>
 
@@ -405,6 +469,10 @@ export function AnalyticsPage() {
             </div>
           )}
         </>
+      )}
+
+      {detail && (
+        <DetailModal detail={detail} from={from} to={to} top={top} onClose={() => setDetail(null)} />
       )}
     </>
   );

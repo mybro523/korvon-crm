@@ -26,13 +26,16 @@ export interface TopProduct {
   unit: string;
   quantity: number;
   amount: number;
+  profit: number;
   count: number;
 }
 
 export interface SellerStat {
+  sellerId: string | null;
   name: string;
   count: number;
   amount: number;
+  profit: number;
 }
 
 export interface AnalyticsParams {

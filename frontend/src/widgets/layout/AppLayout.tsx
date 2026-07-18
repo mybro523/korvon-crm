@@ -4,6 +4,8 @@ import { useAuth } from '@/app/providers/AuthProvider';
 import { notificationsApi } from '@/entities/notification/api';
 import { TelegramConnect } from '@/features/telegram/TelegramConnect';
 import { useT } from '@/shared/i18n';
+import { UNREAD_KEY } from '@/shared/lib/notifications';
+import { useCachedQuery } from '@/shared/lib/cache';
 import { Icon } from '@/shared/ui/Icon';
 import { LangSwitch } from '@/shared/ui/LangSwitch';
 
@@ -19,24 +21,24 @@ export function AppLayout() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [unread, setUnread] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
   const isOwner = user?.role === 'OWNER';
 
+  // счётчик непрочитанных живёт в общем кэше — отметка «прочитано» обновляет бейдж сразу
+  const { data: unreadData, refetch: refetchUnread } = useCachedQuery(
+    UNREAD_KEY,
+    () => notificationsApi.unreadCount(),
+    { enabled: isOwner },
+  );
+  const unread = isOwner ? unreadData?.count ?? 0 : 0;
+
+  // фоновое обновление счётчика (новые продажи) + при переходах
   useEffect(() => {
     if (!isOwner) return;
-    let alive = true;
-    const load = () =>
-      notificationsApi
-        .unreadCount()
-        .then((r) => alive && setUnread(r.count))
-        .catch(() => {});
-    load();
-    const timer = setInterval(load, 30_000);
-    return () => {
-      alive = false;
-      clearInterval(timer);
-    };
+    refetchUnread();
+    const timer = setInterval(refetchUnread, 30_000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOwner, location.pathname]);
 
   // закрываем шторку при переходе

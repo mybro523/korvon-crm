@@ -24,6 +24,7 @@ export function Thumb({ productId, hasPhoto, photoRev, size = 42 }: ThumbProps) 
       src={productPhotoUrl(productId, photoRev)}
       alt=""
       loading="lazy"
+      decoding="async"
     />
   );
 }

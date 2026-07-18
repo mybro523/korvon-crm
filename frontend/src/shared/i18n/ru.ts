@@ -86,8 +86,8 @@ export const ru: Dict = {
     inStock: 'В наличии',
     productsCount: 'товаров',
     deleteConfirm: 'Удалить товар? Это действие необратимо.',
-    namePlaceholder: 'например: Вода минеральная 1л',
-    categoryPlaceholder: 'например: Напитки',
+    namePlaceholder: 'например: Рубашка мужская',
+    categoryPlaceholder: 'например: Рубашка',
     unitPlaceholder: 'шт',
     photo: 'Фото товара',
     uploadPhoto: 'Загрузить фото',
@@ -181,6 +181,11 @@ export const ru: Dict = {
     wholesale: 'Опт',
     retail: 'Розница',
     pcs: 'шт',
+    margin: 'Маржа',
+    avgCheck: 'Средний чек',
+    profitByProduct: 'Прибыль по товарам',
+    clickHint: 'Нажмите для детализации',
+    allSales: 'Все продажи',
   },
 
   users: {

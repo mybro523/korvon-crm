@@ -1,16 +1,28 @@
-import { ReactNode } from 'react';
+import { lazy, ReactNode, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
 import { LoginPage } from '@/pages/login/LoginPage';
-import { NotificationsPage } from '@/pages/notifications/NotificationsPage';
-import { SaleNewPage } from '@/pages/sale-new/SaleNewPage';
-import { SalesPage } from '@/pages/sales/SalesPage';
-import { SettingsPage } from '@/pages/settings/SettingsPage';
-import { UsersPage } from '@/pages/users/UsersPage';
-import { WarehousePage } from '@/pages/warehouse/WarehousePage';
 import { Spinner } from '@/shared/ui/misc';
 import { AppLayout } from '@/widgets/layout/AppLayout';
 import { useAuth } from './providers/AuthProvider';
+
+// ленивая загрузка страниц — код каждой грузится по мере перехода (code splitting)
+const AnalyticsPage = lazy(() =>
+  import('@/pages/analytics/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })),
+);
+const SalesPage = lazy(() => import('@/pages/sales/SalesPage').then((m) => ({ default: m.SalesPage })));
+const SaleNewPage = lazy(() =>
+  import('@/pages/sale-new/SaleNewPage').then((m) => ({ default: m.SaleNewPage })),
+);
+const WarehousePage = lazy(() =>
+  import('@/pages/warehouse/WarehousePage').then((m) => ({ default: m.WarehousePage })),
+);
+const UsersPage = lazy(() => import('@/pages/users/UsersPage').then((m) => ({ default: m.UsersPage })));
+const NotificationsPage = lazy(() =>
+  import('@/pages/notifications/NotificationsPage').then((m) => ({ default: m.NotificationsPage })),
+);
+const SettingsPage = lazy(() =>
+  import('@/pages/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })),
+);
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -30,6 +42,11 @@ function HomeRedirect() {
   return <Navigate to={user?.role === 'OWNER' ? '/analytics' : '/sales/new'} replace />;
 }
 
+/** обёртка ленивой страницы со скелетоном-заглушкой на время загрузки чанка */
+function Lazy({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<Spinner />}>{children}</Suspense>;
+}
+
 export function AppRouter() {
   return (
     <BrowserRouter>
@@ -43,13 +60,13 @@ export function AppRouter() {
           }
         >
           <Route path="/" element={<HomeRedirect />} />
-          <Route path="/sales" element={<SalesPage />} />
-          <Route path="/sales/new" element={<SaleNewPage />} />
+          <Route path="/sales" element={<Lazy><SalesPage /></Lazy>} />
+          <Route path="/sales/new" element={<Lazy><SaleNewPage /></Lazy>} />
           <Route
             path="/analytics"
             element={
               <RequireOwner>
-                <AnalyticsPage />
+                <Lazy><AnalyticsPage /></Lazy>
               </RequireOwner>
             }
           />
@@ -57,7 +74,7 @@ export function AppRouter() {
             path="/warehouse"
             element={
               <RequireOwner>
-                <WarehousePage />
+                <Lazy><WarehousePage /></Lazy>
               </RequireOwner>
             }
           />
@@ -65,7 +82,7 @@ export function AppRouter() {
             path="/users"
             element={
               <RequireOwner>
-                <UsersPage />
+                <Lazy><UsersPage /></Lazy>
               </RequireOwner>
             }
           />
@@ -73,7 +90,7 @@ export function AppRouter() {
             path="/notifications"
             element={
               <RequireOwner>
-                <NotificationsPage />
+                <Lazy><NotificationsPage /></Lazy>
               </RequireOwner>
             }
           />
@@ -81,7 +98,7 @@ export function AppRouter() {
             path="/settings"
             element={
               <RequireOwner>
-                <SettingsPage />
+                <Lazy><SettingsPage /></Lazy>
               </RequireOwner>
             }
           />

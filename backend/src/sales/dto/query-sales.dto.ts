@@ -48,4 +48,9 @@ export class QuerySalesDto {
   @IsOptional()
   @IsString({ message: 'Ҷустуҷӯ нодуруст аст' })
   search?: string;
+
+  /** точное имя товара (для детализации из аналитики) */
+  @IsOptional()
+  @IsString()
+  productName?: string;
 }

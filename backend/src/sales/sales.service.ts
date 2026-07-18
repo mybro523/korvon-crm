@@ -160,6 +160,7 @@ export class SalesService {
     if (q.search) {
       qb.andWhere('s.productName ILIKE :search', { search: `%${q.search.trim()}%` });
     }
+    if (q.productName) qb.andWhere('s.productName = :pn', { pn: q.productName });
     return qb;
   }
 

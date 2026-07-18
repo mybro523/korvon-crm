@@ -78,6 +78,7 @@ export class AnalyticsService {
         s.unit,
         COALESCE(SUM(s.quantity), 0) AS quantity,
         COALESCE(SUM(s."totalAmount"), 0) AS amount,
+        COALESCE(SUM(s."totalAmount" - s."costAtSale" * s.quantity), 0) AS profit,
         COUNT(*)::int AS count
       FROM sales s
       WHERE ${where}
@@ -91,6 +92,7 @@ export class AnalyticsService {
       unit: r.unit,
       quantity: num(r.quantity),
       amount: num(r.amount),
+      profit: num(r.profit),
       count: r.count,
     }));
   }
@@ -100,19 +102,23 @@ export class AnalyticsService {
     const { where, params } = this.buildWhere(q);
     const rows = await this.dataSource.query(
       `SELECT
-        s."sellerName" AS name,
+        s."sellerId" AS "sellerId",
+        MAX(s."sellerName") AS name,
         COUNT(*)::int AS count,
-        COALESCE(SUM(s."totalAmount"), 0) AS amount
+        COALESCE(SUM(s."totalAmount"), 0) AS amount,
+        COALESCE(SUM(s."totalAmount" - s."costAtSale" * s.quantity), 0) AS profit
       FROM sales s
       WHERE ${where}
-      GROUP BY s."sellerName"
+      GROUP BY s."sellerId"
       ORDER BY amount DESC`,
       params,
     );
     return rows.map((r: any) => ({
+      sellerId: r.sellerId,
       name: r.name,
       count: r.count,
       amount: num(r.amount),
+      profit: num(r.profit),
     }));
   }
 }

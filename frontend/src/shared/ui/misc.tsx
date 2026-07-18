@@ -21,6 +21,35 @@ export function EmptyState({ text, icon = 'box' }: { text?: string; icon?: strin
   );
 }
 
+/** скелетон таблицы — показывается, пока нет кэша */
+export function TableSkeleton({ rows = 5 }: { rows?: number }) {
+  return (
+    <div style={{ padding: '6px 0' }}>
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="skeleton skel-row" />
+      ))}
+    </div>
+  );
+}
+
+/** скелетон дашборда аналитики */
+export function AnalyticsSkeleton() {
+  return (
+    <>
+      <div className="stat-grid">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="skeleton skel-tile" />
+        ))}
+      </div>
+      <div className="skeleton skel-chart" style={{ marginBottom: 14 }} />
+      <div className="charts-grid">
+        <div className="skeleton skel-chart" />
+        <div className="skeleton skel-chart" />
+      </div>
+    </>
+  );
+}
+
 export function Badge({
   children,
   variant = 'gray',

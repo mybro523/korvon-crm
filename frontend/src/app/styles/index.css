@@ -892,3 +892,115 @@ table.table { width: 100%; border-collapse: collapse; }
   .filters-selects { grid-template-columns: 1fr; }
   .bottomnav-item { font-size: 9px; }
 }
+
+/* ═══════════════════════════════════════════════
+   Анимации (только CSS, без библиотек)
+   ═══════════════════════════════════════════════ */
+@keyframes kv-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes kv-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes kv-pop {
+  0% { opacity: 0; transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes kv-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+@keyframes kv-spin { to { transform: rotate(360deg); } }
+
+/* появление страницы при переходе */
+.app-main > * {
+  animation: kv-rise 0.28s ease-out both;
+}
+
+/* карточки/строки появляются мягко */
+.card { animation: kv-rise 0.3s ease-out both; }
+/* только opacity на входе — иначе transform «залипает» и ломает hover-lift кликабельных плиток */
+.stat-grid .card { animation: kv-fade-in 0.32s ease-out both; }
+/* лёгкая каскадность плиток аналитики */
+.stat-grid > :nth-child(1) { animation-delay: 0.02s; }
+.stat-grid > :nth-child(2) { animation-delay: 0.06s; }
+.stat-grid > :nth-child(3) { animation-delay: 0.10s; }
+.stat-grid > :nth-child(4) { animation-delay: 0.14s; }
+.stat-grid > :nth-child(5) { animation-delay: 0.18s; }
+.stat-grid > :nth-child(6) { animation-delay: 0.22s; }
+
+/* интерактивные плитки/бары аналитики */
+.stat-tile.clickable,
+.chart-clickable {
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+.stat-tile.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-pop);
+  border-color: var(--primary-tint-2);
+}
+.stat-tile.clickable:active { transform: translateY(0); }
+.stat-tile .stat-arrow { opacity: 0; transition: opacity 0.14s; margin-left: auto; color: var(--muted); }
+.stat-tile.clickable:hover .stat-arrow { opacity: 1; }
+
+/* строки таблицы — плавный ховер */
+.table tbody tr { transition: background 0.12s ease; }
+
+/* кнопки — микровзаимодействие */
+.btn { transition: background 0.14s ease, border-color 0.14s ease, transform 0.08s ease, opacity 0.14s ease; }
+.btn:active:not(:disabled) { transform: scale(0.97); }
+
+/* модалка и оверлей — плавные */
+.modal-overlay { animation: kv-fade-in 0.16s ease-out; }
+.modal { animation: kv-pop 0.2s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.sheet-overlay { animation: kv-fade-in 0.16s ease-out; }
+.toast { animation: kv-rise 0.22s ease-out both; }
+
+/* уважение к настройке «меньше движения» */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ═══ Скелетоны загрузки ═══ */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, #eeece4 50%, var(--surface-2) 75%);
+  background-size: 800px 100%;
+  animation: kv-shimmer 1.3s linear infinite;
+  border-radius: 8px;
+}
+.skel-row { height: 46px; margin: 8px 12px; }
+.skel-line { height: 12px; margin: 8px 0; }
+.skel-tile { height: 84px; border-radius: var(--radius); }
+.skel-chart { height: 220px; border-radius: var(--radius); margin-top: 4px; }
+
+/* ═══ Модалка детализации аналитики ═══ */
+.detail-list { display: flex; flex-direction: column; gap: 0; max-height: 60vh; overflow-y: auto; }
+.detail-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.detail-row:last-child { border-bottom: none; }
+.detail-row-main { flex: 1; min-width: 0; }
+.detail-row-title { font-weight: 600; font-size: 14px; }
+.detail-row-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.detail-row-amount { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.detail-summary {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin-bottom: 14px;
+}
+.detail-stat {
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.detail-stat-label { font-size: 12px; color: var(--ink-2); font-weight: 600; }
+.detail-stat-value { font-size: 19px; font-weight: 800; margin-top: 3px; letter-spacing: -0.2px; }
+.detail-stat.good .detail-stat-value { color: var(--primary); }

@@ -1,22 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { salesApi } from '@/entities/sale/api';
-import {
-  PaymentMethod,
-  SalesFilter,
-  SalesListResponse,
-  SaleType,
-} from '@/entities/sale/types';
+import { PaymentMethod, SalesFilter, SalesListResponse, SaleType } from '@/entities/sale/types';
 import { extractError } from '@/shared/api/http';
 import { useT } from '@/shared/i18n';
+import { useCachedQuery } from '@/shared/lib/cache';
 import { downloadFile } from '@/shared/lib/download';
 import { fmtDateTime, fmtMoney, fmtQty } from '@/shared/lib/format';
 import { PeriodKey, periodRange, userTimeZone } from '@/shared/lib/periods';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
-import { Badge, EmptyState, Pagination, Spinner } from '@/shared/ui/misc';
+import { Badge, EmptyState, Pagination, TableSkeleton } from '@/shared/ui/misc';
 import { useToast } from '@/shared/ui/Toast';
 
 type PeriodOrAll = PeriodKey | 'all';
@@ -35,51 +31,38 @@ export function SalesPage() {
   const [payment, setPayment] = useState('');
   const [saleType, setSaleType] = useState('');
   const [search, setSearch] = useState('');
+  const [debounced, setDebounced] = useState('');
   const [page, setPage] = useState(1);
-  const [data, setData] = useState<SalesListResponse | null>(null);
-  const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
-  const buildFilter = useCallback((): SalesFilter => {
-    const filter: SalesFilter = { page, limit: LIMIT };
-    if (period !== 'all') {
-      const range = periodRange(period, customFrom, customTo);
-      filter.from = range.from;
-      filter.to = range.to;
-    }
-    if (payment) filter.paymentMethod = payment as PaymentMethod;
-    if (saleType) filter.saleType = saleType as SaleType;
-    if (search.trim()) filter.search = search.trim();
-    return filter;
-  }, [page, period, customFrom, customTo, payment, saleType, search]);
-
   useEffect(() => {
-    setLoading(true);
-    let stale = false; // защита от гонки: устаревший ответ не перезапишет актуальный
-    const timer = setTimeout(() => {
-      salesApi
-        .list(buildFilter())
-        .then((d) => {
-          if (!stale) setData(d);
-        })
-        .catch((e) => {
-          if (!stale) toast.error(extractError(e));
-        })
-        .finally(() => {
-          if (!stale) setLoading(false);
-        });
-    }, 250);
-    return () => {
-      stale = true;
-      clearTimeout(timer);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [buildFilter]);
+    const tm = setTimeout(() => setDebounced(search), 300);
+    return () => clearTimeout(tm);
+  }, [search]);
 
   // при смене фильтров возвращаемся на первую страницу
   useEffect(() => {
     setPage(1);
-  }, [period, customFrom, customTo, payment, saleType, search]);
+  }, [period, customFrom, customTo, payment, saleType, debounced]);
+
+  const filter = useMemo((): SalesFilter => {
+    const f: SalesFilter = { page, limit: LIMIT };
+    if (period !== 'all') {
+      const range = periodRange(period, customFrom, customTo);
+      f.from = range.from;
+      f.to = range.to;
+    }
+    if (payment) f.paymentMethod = payment as PaymentMethod;
+    if (saleType) f.saleType = saleType as SaleType;
+    if (debounced.trim()) f.search = debounced.trim();
+    return f;
+  }, [page, period, customFrom, customTo, payment, saleType, debounced]);
+
+  const { data, loading } = useCachedQuery<SalesListResponse>(
+    `sales:${JSON.stringify(filter)}`,
+    () => salesApi.list(filter),
+  );
+  const buildFilter = () => filter;
 
   const onExport = async () => {
     setExporting(true);
@@ -200,7 +183,7 @@ export function SalesPage() {
 
       <div className="card">
         {loading ? (
-          <Spinner />
+          <TableSkeleton rows={6} />
         ) : !data || data.items.length === 0 ? (
           <EmptyState icon="cart" />
         ) : (

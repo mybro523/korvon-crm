@@ -4,6 +4,7 @@ import { productsApi } from '@/entities/product/api';
 import { Product } from '@/entities/product/types';
 import { extractError } from '@/shared/api/http';
 import { useT } from '@/shared/i18n';
+import { mergeCategories } from '@/shared/lib/categories';
 import { compressImage, productPhotoUrl } from '@/shared/lib/image';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
@@ -17,10 +18,11 @@ interface Props {
   product: Product | null;
   categories: string[];
   onClose: () => void;
-  onSaved: () => void;
+  /** вызывается после фонового сохранения — родитель обновляет список */
+  onDone: () => void;
 }
 
-export function ProductFormModal({ product, categories, onClose, onSaved }: Props) {
+export function ProductFormModal({ product, categories, onClose, onDone }: Props) {
   const t = useT();
   const toast = useToast();
   const [name, setName] = useState(product?.name ?? '');
@@ -33,7 +35,6 @@ export function ProductFormModal({ product, categories, onClose, onSaved }: Prop
   const [arrivalDate, setArrivalDate] = useState(
     product?.arrivalDate ?? dayjs().format('YYYY-MM-DD'),
   );
-  const [saving, setSaving] = useState(false);
 
   /** undefined — фото не меняли; dataURL — новое; '' — удалить */
   const [photo, setPhoto] = useState<string | undefined>(undefined);
@@ -61,39 +62,37 @@ export function ProductFormModal({ product, categories, onClose, onSaved }: Prop
     }
   };
 
-  const onSubmit = async (e: FormEvent) => {
+  const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-    try {
-      const qtyNum = parseFloat(quantity) || 0;
-      const payload = {
-        name: name.trim(),
-        category: category.trim(),
-        unit: unit.trim(),
-        costPrice: parseFloat(costPrice) || 0,
-        sellPrice: parseFloat(sellPrice) || 0,
-        description: description.trim(),
-        arrivalDate,
-        ...(photo !== undefined ? { photo } : {}),
-      };
-      if (product) {
-        // остаток отправляем только если его реально изменили —
-        // иначе затрём актуальное значение, изменённое продажами/трансферами
-        await productsApi.update(product.id, {
+    const qtyNum = parseFloat(quantity) || 0;
+    const payload = {
+      name: name.trim(),
+      category: category.trim(),
+      unit: unit.trim(),
+      costPrice: parseFloat(costPrice) || 0,
+      sellPrice: parseFloat(sellPrice) || 0,
+      description: description.trim(),
+      arrivalDate,
+      ...(photo !== undefined ? { photo } : {}),
+    };
+    // оптимистично: закрываем модалку сразу, запрос уходит в фоне
+    onClose();
+    const req = product
+      ? productsApi.update(product.id, {
           ...payload,
+          // остаток отправляем только если реально изменили (иначе затрём продажи)
           ...(qtyNum !== product.quantity ? { quantity: qtyNum } : {}),
-        });
-      } else {
-        await productsApi.create({ ...payload, quantity: qtyNum });
-      }
-      toast.success(t.common.saved);
-      onSaved();
-      onClose();
-    } catch (err) {
-      toast.error(extractError(err));
-    } finally {
-      setSaving(false);
-    }
+        })
+      : productsApi.create({ ...payload, quantity: qtyNum });
+    req
+      .then(() => {
+        toast.success(t.common.saved);
+        onDone();
+      })
+      .catch((err) => {
+        toast.error(extractError(err));
+        onDone(); // всё равно синхронизируем список с сервером
+      });
   };
 
   return (
@@ -119,7 +118,7 @@ export function ProductFormModal({ product, categories, onClose, onSaved }: Prop
               list="category-suggestions"
             />
             <datalist id="category-suggestions">
-              {categories.map((c) => (
+              {mergeCategories(categories).map((c) => (
                 <option key={c} value={c} />
               ))}
             </datalist>
@@ -233,9 +232,7 @@ export function ProductFormModal({ product, categories, onClose, onSaved }: Prop
           <Button type="button" variant="secondary" onClick={onClose}>
             {t.common.cancel}
           </Button>
-          <Button type="submit" loading={saving}>
-            {t.common.save}
-          </Button>
+          <Button type="submit">{t.common.save}</Button>
         </div>
       </form>
     </Modal>

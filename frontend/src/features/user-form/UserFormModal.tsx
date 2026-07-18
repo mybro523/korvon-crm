@@ -11,10 +11,10 @@ import { useToast } from '@/shared/ui/Toast';
 interface Props {
   user: PublicUser | null;
   onClose: () => void;
-  onSaved: () => void;
+  onDone: () => void;
 }
 
-export function UserFormModal({ user, onClose, onSaved }: Props) {
+export function UserFormModal({ user, onClose, onDone }: Props) {
   const t = useT();
   const toast = useToast();
   const [fullName, setFullName] = useState(user?.fullName ?? '');
@@ -22,36 +22,34 @@ export function UserFormModal({ user, onClose, onSaved }: Props) {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>(user?.role ?? 'SELLER');
   const [isActive, setIsActive] = useState(user?.isActive ?? true);
-  const [saving, setSaving] = useState(false);
 
-  const onSubmit = async (e: FormEvent) => {
+  const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-    try {
-      if (user) {
-        await usersApi.update(user.id, {
+    // оптимистично: модалка закрывается сразу, запрос в фоне
+    onClose();
+    const req = user
+      ? usersApi.update(user.id, {
           fullName: fullName.trim(),
           username: username.trim(),
           ...(password ? { password } : {}),
           role,
           isActive,
-        });
-      } else {
-        await usersApi.create({
+        })
+      : usersApi.create({
           fullName: fullName.trim(),
           username: username.trim(),
           password,
           role,
         });
-      }
-      toast.success(t.common.saved);
-      onSaved();
-      onClose();
-    } catch (err) {
-      toast.error(extractError(err));
-    } finally {
-      setSaving(false);
-    }
+    req
+      .then(() => {
+        toast.success(t.common.saved);
+        onDone();
+      })
+      .catch((err) => {
+        toast.error(extractError(err));
+        onDone();
+      });
   };
 
   return (
@@ -106,9 +104,7 @@ export function UserFormModal({ user, onClose, onSaved }: Props) {
           <Button type="button" variant="secondary" onClick={onClose}>
             {t.common.cancel}
           </Button>
-          <Button type="submit" loading={saving}>
-            {t.common.save}
-          </Button>
+          <Button type="submit">{t.common.save}</Button>
         </div>
       </form>
     </Modal>

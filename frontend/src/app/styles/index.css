@@ -723,8 +723,11 @@ table.table { width: 100%; border-collapse: collapse; }
 @media (min-width: 768px) {
   .appbar, .bottomnav { display: none; }
   .app-main {
-    margin-left: var(--sidebar-w);
+    /* снимаем мобильное ограничение — на десктопе main заполняет остаток справа от сайдбара */
+    max-width: none;
+    margin: 0 0 0 var(--sidebar-w);
     padding: 24px 28px 40px;
+    min-width: 0;
   }
   .sidebar {
     display: flex;
@@ -753,15 +756,28 @@ table.table { width: 100%; border-collapse: collapse; }
   .sidebar-extra {
     display: block;
     border-top: 1px solid var(--border);
-    padding-top: 8px;
-    margin-bottom: 8px;
+    padding-top: 10px;
+    margin-bottom: 10px;
   }
+  /* в узком сайдбаре: иконка+лейбл сверху, кнопка переносится на всю ширину */
   .sidebar-extra .tg-row {
-    padding: 8px 6px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    padding: 8px;
     border: none;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    cursor: default;
   }
-  .sidebar-extra .tg-row .btn { flex: none; }
-  .sidebar-extra .sheet-lang { border-top: none; padding: 4px 6px 0; }
+  .sidebar-extra .tg-row:hover { background: var(--surface-2); }
+  .sidebar-extra .tg-row > .icon { color: var(--primary); flex-shrink: 0; }
+  .sidebar-extra .tg-row .tg-label { flex: 1; min-width: 0; font-size: 13px; }
+  .sidebar-extra .tg-row .btn { flex: 1 1 100%; }
+  .sidebar-extra .sheet-lang { border-top: none; padding: 12px 2px 2px; }
+  .sidebar-extra .sheet-lang .lang-switch { flex: 1; }
+  .sidebar-extra .sheet-lang .lang-option { flex: 1; text-align: center; }
   .sidebar-user {
     border-top: 1px solid var(--border);
     padding-top: 12px;
@@ -813,6 +829,9 @@ table.table { width: 100%; border-collapse: collapse; }
   .table td.tfoot-filler { display: table-cell; }
   .table tbody tr:last-child td { border-bottom: none; }
   .table .num, .table th.num { text-align: right; }
+  /* столбец действий не сжимается, кнопки в одну строку */
+  .table td:last-child, .table th:last-child { width: 1px; white-space: nowrap; }
+  .table .row-actions { flex-wrap: nowrap; }
   .table tfoot tr { background: transparent; }
   .table tfoot td { background: var(--surface-2); border-top: 2px solid var(--border-strong); }
 
@@ -850,6 +869,19 @@ table.table { width: 100%; border-collapse: collapse; }
   .points-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 13px; }
   .settings-grid { grid-template-columns: 1fr 1fr; align-items: start; gap: 14px; }
   .login-card { padding: 34px 30px 28px; }
+}
+
+/* ═══ Широкие ноутбуки (≥1200px) ═══ */
+@media (min-width: 1200px) {
+  .app-main { padding: 26px 40px 44px; }
+}
+
+/* ═══ Большие мониторы (≥1600px): контент не на всю ширину ═══ */
+@media (min-width: 1600px) {
+  .app-main { padding-left: 6vw; padding-right: 6vw; }
+}
+@media (min-width: 2000px) {
+  .app-main { padding-left: 10vw; padding-right: 10vw; }
 }
 
 /* ═══ Сверхузкие экраны (320px) ═══ */

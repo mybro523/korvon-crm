@@ -2,8 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { useAuth } from '@/app/providers/AuthProvider';
-import { pointsApi } from '@/entities/point/api';
-import { SalesPoint } from '@/entities/point/types';
 import { salesApi } from '@/entities/sale/api';
 import {
   PaymentMethod,
@@ -34,19 +32,13 @@ export function SalesPage() {
   const [period, setPeriod] = useState<PeriodOrAll>('all');
   const [customFrom, setCustomFrom] = useState(dayjs().format('YYYY-MM-DD'));
   const [customTo, setCustomTo] = useState(dayjs().format('YYYY-MM-DD'));
-  const [pointSel, setPointSel] = useState('');
   const [payment, setPayment] = useState('');
   const [saleType, setSaleType] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [points, setPoints] = useState<SalesPoint[]>([]);
   const [data, setData] = useState<SalesListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
-
-  useEffect(() => {
-    if (isOwner) pointsApi.list().then(setPoints).catch(() => {});
-  }, [isOwner]);
 
   const buildFilter = useCallback((): SalesFilter => {
     const filter: SalesFilter = { page, limit: LIMIT };
@@ -55,13 +47,11 @@ export function SalesPage() {
       filter.from = range.from;
       filter.to = range.to;
     }
-    if (pointSel === 'WAREHOUSE') filter.source = 'WAREHOUSE';
-    else if (pointSel) filter.pointId = pointSel;
     if (payment) filter.paymentMethod = payment as PaymentMethod;
     if (saleType) filter.saleType = saleType as SaleType;
     if (search.trim()) filter.search = search.trim();
     return filter;
-  }, [page, period, customFrom, customTo, pointSel, payment, saleType, search]);
+  }, [page, period, customFrom, customTo, payment, saleType, search]);
 
   useEffect(() => {
     setLoading(true);
@@ -89,7 +79,7 @@ export function SalesPage() {
   // при смене фильтров возвращаемся на первую страницу
   useEffect(() => {
     setPage(1);
-  }, [period, customFrom, customTo, pointSel, payment, saleType, search]);
+  }, [period, customFrom, customTo, payment, saleType, search]);
 
   const onExport = async () => {
     setExporting(true);
@@ -98,8 +88,6 @@ export function SalesPage() {
       const params = new URLSearchParams();
       if (f.from) params.set('from', f.from);
       if (f.to) params.set('to', f.to);
-      if (f.pointId) params.set('pointId', f.pointId);
-      if (f.source) params.set('source', f.source);
       if (f.paymentMethod) params.set('paymentMethod', f.paymentMethod);
       if (f.saleType) params.set('saleType', f.saleType);
       if (f.search) params.set('search', f.search);
@@ -131,18 +119,18 @@ export function SalesPage() {
             <h1 className="page-title">{t.sales.title}</h1>
             <p className="page-subtitle">{t.sales.subtitle}</p>
           </div>
-          {isOwner && (
-            <div className="page-actions">
+          <div className="page-actions">
+            {isOwner && (
               <Button variant="secondary" onClick={onExport} loading={exporting}>
                 <Icon name="download" size={17} /> {t.common.exportExcel}
               </Button>
-              <Link to="/sales/new" style={{ display: 'contents' }}>
-                <Button>
-                  <Icon name="plus" size={17} /> {t.sales.newSale}
-                </Button>
-              </Link>
-            </div>
-          )}
+            )}
+            <Link to="/sales/new" style={{ display: 'contents' }}>
+              <Button>
+                <Icon name="plus" size={17} /> {t.sales.newSale}
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -176,23 +164,6 @@ export function SalesPage() {
           </div>
         )}
         <div className="filters-selects">
-          {isOwner && (
-            <select
-              className="field-select"
-              value={pointSel}
-              onChange={(e) => setPointSel(e.target.value)}
-            >
-              <option value="">
-                {t.sales.place}: {t.common.all}
-              </option>
-              <option value="WAREHOUSE">{t.sales.warehouse}</option>
-              {points.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          )}
           <select
             className="field-select"
             value={payment}
@@ -245,7 +216,6 @@ export function SalesPage() {
                     <th className="num">{t.sales.totalAmount}</th>
                     <th>{t.sales.type}</th>
                     <th>{t.sales.payment}</th>
-                    <th>{t.sales.place}</th>
                     <th>{t.sales.seller}</th>
                   </tr>
                 </thead>
@@ -281,7 +251,6 @@ export function SalesPage() {
                           </Badge>
                         )}
                       </td>
-                      <td data-label={t.sales.place}>{s.pointName ?? t.sales.warehouse}</td>
                       <td data-label={t.sales.seller}>{s.sellerName}</td>
                     </tr>
                   ))}
@@ -294,7 +263,7 @@ export function SalesPage() {
                     <td className="num" data-label={t.sales.totalAmount}>
                       {fmtMoney(data.totalAmount)}
                     </td>
-                    <td colSpan={4} className="tfoot-filler" />
+                    <td colSpan={3} className="tfoot-filler" />
                   </tr>
                 </tfoot>
               </table>

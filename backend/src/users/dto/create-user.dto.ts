@@ -1,4 +1,4 @@
-import { IsIn, IsNotEmpty, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
+import { IsIn, IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { UserRole } from '../../entities';
 
 export class CreateUserDto {
@@ -16,8 +16,4 @@ export class CreateUserDto {
 
   @IsIn(['OWNER', 'SELLER'], { message: 'Нақши нодуруст' })
   role: UserRole;
-
-  @IsOptional()
-  @IsUUID('4', { message: 'Нуқтаи фурӯш нодуруст аст' })
-  pointId?: string;
 }

@@ -26,8 +26,8 @@ export class AnalyticsController {
     return this.analyticsService.topProducts(q);
   }
 
-  @Get('by-points')
-  byPoints(@Query() q: AnalyticsQueryDto) {
-    return this.analyticsService.byPoints(q);
+  @Get('by-sellers')
+  bySellers(@Query() q: AnalyticsQueryDto) {
+    return this.analyticsService.bySellers(q);
   }
 }

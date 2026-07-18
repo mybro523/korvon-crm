@@ -2,10 +2,7 @@ import { ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
 import { LoginPage } from '@/pages/login/LoginPage';
-import { MyStockPage } from '@/pages/my-stock/MyStockPage';
 import { NotificationsPage } from '@/pages/notifications/NotificationsPage';
-import { PointDetailPage } from '@/pages/point-detail/PointDetailPage';
-import { PointsPage } from '@/pages/points/PointsPage';
 import { SaleNewPage } from '@/pages/sale-new/SaleNewPage';
 import { SalesPage } from '@/pages/sales/SalesPage';
 import { SettingsPage } from '@/pages/settings/SettingsPage';
@@ -25,12 +22,6 @@ function RequireAuth({ children }: { children: ReactNode }) {
 function RequireOwner({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   if (user?.role !== 'OWNER') return <Navigate to="/sales/new" replace />;
-  return <>{children}</>;
-}
-
-function RequireSeller({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
-  if (user?.role !== 'SELLER') return <Navigate to="/analytics" replace />;
   return <>{children}</>;
 }
 
@@ -55,14 +46,6 @@ export function AppRouter() {
           <Route path="/sales" element={<SalesPage />} />
           <Route path="/sales/new" element={<SaleNewPage />} />
           <Route
-            path="/my-stock"
-            element={
-              <RequireSeller>
-                <MyStockPage />
-              </RequireSeller>
-            }
-          />
-          <Route
             path="/analytics"
             element={
               <RequireOwner>
@@ -75,22 +58,6 @@ export function AppRouter() {
             element={
               <RequireOwner>
                 <WarehousePage />
-              </RequireOwner>
-            }
-          />
-          <Route
-            path="/points"
-            element={
-              <RequireOwner>
-                <PointsPage />
-              </RequireOwner>
-            }
-          />
-          <Route
-            path="/points/:id"
-            element={
-              <RequireOwner>
-                <PointDetailPage />
               </RequireOwner>
             }
           />

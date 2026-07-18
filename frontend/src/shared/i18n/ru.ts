@@ -7,8 +7,7 @@ export const ru: Dict = {
 
   nav: {
     analytics: 'Аналитика',
-    warehouse: 'Склад',
-    points: 'Точки продаж',
+    warehouse: 'Товары',
     sales: 'Продажи',
     newSale: 'Новая продажа',
     users: 'Сотрудники',
@@ -66,8 +65,8 @@ export const ru: Dict = {
   },
 
   warehouse: {
-    title: 'Склад',
-    subtitle: 'Управление товарами и запасами',
+    title: 'Товары',
+    subtitle: 'Управление товарами и остатками',
     addProduct: 'Добавить товар',
     editProduct: 'Изменить товар',
     name: 'Название товара',
@@ -75,7 +74,10 @@ export const ru: Dict = {
     allCategories: 'Все категории',
     unit: 'Единица измерения',
     costPrice: 'Себестоимость',
+    sellPrice: 'Цена продажи',
     quantity: 'Количество',
+    description: 'Описание',
+    descriptionPlaceholder: 'Дополнительная информация о товаре (необязательно)',
     arrivalDate: 'Дата поступления',
     totalValue: 'Общая стоимость',
     warehouseValue: 'Стоимость склада',
@@ -172,7 +174,7 @@ export const ru: Dict = {
     itemsSold: 'Товаров продано',
     profit: 'Прибыль',
     dailyChart: 'Динамика продаж',
-    byPointsChart: 'Продажи по точкам',
+    bySellersChart: 'Продажи по продавцам',
     topProducts: 'Самые продаваемые',
     paymentSplit: 'Разбивка оплаты',
     noData: 'За этот период продаж нет',

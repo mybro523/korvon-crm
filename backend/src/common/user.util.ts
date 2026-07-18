@@ -7,8 +7,6 @@ export function publicUser(user: User) {
     fullName: user.fullName,
     username: user.username,
     role: user.role,
-    pointId: user.pointId ?? null,
-    point: user.point ? { id: user.point.id, name: user.point.name } : null,
     isActive: user.isActive,
     telegramConnected: !!user.telegramChatId,
     createdAt: user.createdAt,

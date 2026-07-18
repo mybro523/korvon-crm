@@ -12,14 +12,6 @@ export class AnalyticsService {
   private buildWhere(q: AnalyticsQueryDto): { where: string; params: unknown[] } {
     const conds = ['s."createdAt" >= $1', 's."createdAt" <= $2'];
     const params: unknown[] = [normalizeFrom(q.from), normalizeTo(q.to)];
-    if (q.pointId) {
-      params.push(q.pointId);
-      conds.push(`s."pointId" = $${params.length}`);
-    }
-    if (q.source) {
-      params.push(q.source);
-      conds.push(`s."source" = $${params.length}`);
-    }
     return { where: conds.join(' AND '), params };
   }
 
@@ -103,33 +95,24 @@ export class AnalyticsService {
     }));
   }
 
-  /** продажи в разрезе точек (склад = «Анбор») */
-  async byPoints(q: AnalyticsQueryDto) {
+  /** топ продавцов по сумме продаж */
+  async bySellers(q: AnalyticsQueryDto) {
     const { where, params } = this.buildWhere(q);
-    // группировка по pointId (не по снапшоту имени!) — иначе переименованная точка раздваивается;
-    // для продаж удалённых точек (pointId = NULL) различаем их по снапшоту pointName
     const rows = await this.dataSource.query(
       `SELECT
-        s.source,
-        s."pointId",
-        COALESCE(MAX(sp.name), MAX(s."pointName"), 'Анбор') AS name,
+        s."sellerName" AS name,
         COUNT(*)::int AS count,
-        COALESCE(SUM(s."totalAmount"), 0) AS amount,
-        COALESCE(SUM(s.quantity), 0) AS items
+        COALESCE(SUM(s."totalAmount"), 0) AS amount
       FROM sales s
-      LEFT JOIN sales_points sp ON sp.id = s."pointId"
       WHERE ${where}
-      GROUP BY s.source, s."pointId", (CASE WHEN s."pointId" IS NULL THEN s."pointName" END)
+      GROUP BY s."sellerName"
       ORDER BY amount DESC`,
       params,
     );
     return rows.map((r: any) => ({
-      source: r.source,
-      pointId: r.pointId,
-      name: r.source === 'WAREHOUSE' ? 'Анбор' : r.name,
+      name: r.name,
       count: r.count,
       amount: num(r.amount),
-      items: num(r.items),
     }));
   }
 }

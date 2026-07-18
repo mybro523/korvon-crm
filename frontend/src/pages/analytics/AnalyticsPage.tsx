@@ -17,7 +17,7 @@ import {
   analyticsApi,
   AnalyticsSummary,
   DailyPoint,
-  PointStat,
+  SellerStat,
   TopProduct,
 } from '@/entities/analytics/api';
 import { extractError } from '@/shared/api/http';
@@ -116,7 +116,7 @@ export function AnalyticsPage() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [daily, setDaily] = useState<DailyPoint[]>([]);
   const [top, setTop] = useState<TopProduct[]>([]);
-  const [byPoints, setByPoints] = useState<PointStat[]>([]);
+  const [bySellers, setBySellers] = useState<SellerStat[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -128,14 +128,14 @@ export function AnalyticsPage() {
       analyticsApi.summary(params),
       analyticsApi.daily(params),
       analyticsApi.topProducts({ ...params, limit: 10 }),
-      analyticsApi.byPoints(params),
+      analyticsApi.bySellers(params),
     ])
-      .then(([s, d, tp, bp]) => {
+      .then(([s, d, tp, bs]) => {
         if (stale) return;
         setSummary(s);
         setDaily(fillDailyGaps(d, from, to));
         setTop(tp);
-        setByPoints(bp);
+        setBySellers(bs);
       })
       .catch((e) => {
         if (!stale) toast.error(extractError(e));
@@ -286,12 +286,12 @@ export function AnalyticsPage() {
                 </ResponsiveContainer>
               </div>
 
-              {/* продажи по точкам */}
+              {/* продажи по продавцам */}
               <div className="card chart-card">
-                <h3 className="card-title">{t.analytics.byPointsChart}</h3>
-                <ResponsiveContainer width="100%" height={Math.max(200, byPoints.length * 46 + 40)}>
+                <h3 className="card-title">{t.analytics.bySellersChart}</h3>
+                <ResponsiveContainer width="100%" height={Math.max(200, bySellers.length * 46 + 40)}>
                   <BarChart
-                    data={byPoints}
+                    data={bySellers}
                     layout="vertical"
                     margin={{ top: 4, right: 78, left: 4, bottom: 4 }}
                   >

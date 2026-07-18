@@ -16,10 +16,7 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const username = dto.username.trim().toLowerCase();
-    const user = await this.usersRepo.findOne({
-      where: { username },
-      relations: { point: true },
-    });
+    const user = await this.usersRepo.findOne({ where: { username } });
 
     if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
       throw new UnauthorizedException('Номи корбар ё гузарвожа нодуруст аст');

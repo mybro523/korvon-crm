@@ -29,13 +29,10 @@ export interface TopProduct {
   count: number;
 }
 
-export interface PointStat {
-  source: string;
-  pointId: string | null;
+export interface SellerStat {
   name: string;
   count: number;
   amount: number;
-  items: number;
 }
 
 export interface AnalyticsParams {
@@ -52,6 +49,6 @@ export const analyticsApi = {
     http.get<DailyPoint[]>('/analytics/daily', { params }).then((r) => r.data),
   topProducts: (params: AnalyticsParams) =>
     http.get<TopProduct[]>('/analytics/top-products', { params }).then((r) => r.data),
-  byPoints: (params: AnalyticsParams) =>
-    http.get<PointStat[]>('/analytics/by-points', { params }).then((r) => r.data),
+  bySellers: (params: AnalyticsParams) =>
+    http.get<SellerStat[]>('/analytics/by-sellers', { params }).then((r) => r.data),
 };

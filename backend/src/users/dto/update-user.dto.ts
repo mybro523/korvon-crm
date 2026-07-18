@@ -4,7 +4,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
   MinLength,
   ValidateIf,
 } from 'class-validator';
@@ -30,11 +29,6 @@ export class UpdateUserDto {
   @IsOptional()
   @IsIn(['OWNER', 'SELLER'], { message: 'Нақши нодуруст' })
   role?: UserRole;
-
-  /** null = открепить от точки */
-  @ValidateIf((o) => o.pointId !== undefined && o.pointId !== null)
-  @IsUUID('4', { message: 'Нуқтаи фурӯш нодуруст аст' })
-  pointId?: string | null;
 
   @IsOptional()
   @IsBoolean({ message: 'Ҳолати нодуруст' })

@@ -6,7 +6,7 @@ import { ProductFormModal } from '@/features/product-form/ProductFormModal';
 import { extractError } from '@/shared/api/http';
 import { useT } from '@/shared/i18n';
 import { downloadFile } from '@/shared/lib/download';
-import { fmtDate, fmtMoney, fmtQty } from '@/shared/lib/format';
+import { fmtMoney, fmtQty } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/Button';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { Icon } from '@/shared/ui/Icon';
@@ -154,9 +154,9 @@ export function WarehousePage() {
                   <th>{t.warehouse.name}</th>
                   <th>{t.warehouse.category}</th>
                   <th className="num">{t.warehouse.costPrice}</th>
+                  <th className="num">{t.warehouse.sellPrice}</th>
                   <th className="num">{t.warehouse.quantity}</th>
                   <th className="num">{t.warehouse.totalValue}</th>
-                  <th>{t.warehouse.arrivalDate}</th>
                   <th>{t.users.status}</th>
                   <th />
                 </tr>
@@ -174,13 +174,15 @@ export function WarehousePage() {
                     <td className="num" data-label={t.warehouse.costPrice}>
                       {fmtMoney(p.costPrice)}
                     </td>
+                    <td className="num" data-label={t.warehouse.sellPrice}>
+                      {fmtMoney(p.sellPrice)}
+                    </td>
                     <td className="num" data-label={t.warehouse.quantity}>
                       {fmtQty(p.quantity)} {p.unit}
                     </td>
                     <td className="num" data-label={t.warehouse.totalValue}>
                       {fmtMoney(p.costPrice * p.quantity)}
                     </td>
-                    <td data-label={t.warehouse.arrivalDate}>{fmtDate(p.arrivalDate)}</td>
                     <td data-label={t.users.status}>
                       {p.quantity <= 0 ? (
                         <Badge variant="danger">{t.warehouse.outOfStock}</Badge>

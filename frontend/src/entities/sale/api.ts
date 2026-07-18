@@ -17,10 +17,6 @@ export const salesApi = {
     http.post<Sale>('/sales', payload).then((r) => r.data),
   list: (filter: SalesFilter) =>
     http.get<SalesListResponse>('/sales', { params: clean(filter) }).then((r) => r.data),
-  availableProducts: (source?: string, pointId?: string) =>
-    http
-      .get<AvailableProduct[]>('/sales/available-products', {
-        params: clean({ source, pointId }),
-      })
-      .then((r) => r.data),
+  availableProducts: () =>
+    http.get<AvailableProduct[]>('/sales/available-products').then((r) => r.data),
 };

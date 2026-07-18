@@ -13,12 +13,8 @@ export class SalesController {
   constructor(private readonly salesService: SalesService) {}
 
   @Get('available-products')
-  availableProducts(
-    @CurrentUser() user: User,
-    @Query('source') source?: string,
-    @Query('pointId') pointId?: string,
-  ) {
-    return this.salesService.availableProducts(user, source, pointId);
+  availableProducts() {
+    return this.salesService.availableProducts();
   }
 
   @Post()

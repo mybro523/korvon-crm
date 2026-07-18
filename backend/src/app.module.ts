@@ -7,7 +7,6 @@ import { AuthModule } from './auth/auth.module';
 import { ALL_ENTITIES } from './entities';
 import { ExportModule } from './export/export.module';
 import { NotificationsModule } from './notifications/notifications.module';
-import { PointsModule } from './points/points.module';
 import { ProductsModule } from './products/products.module';
 import { SalesModule } from './sales/sales.module';
 import { SeedService } from './seed/seed.service';
@@ -42,7 +41,6 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     UsersModule,
     ProductsModule,
-    PointsModule,
     SalesModule,
     AnalyticsModule,
     NotificationsModule,

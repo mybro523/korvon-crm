@@ -50,7 +50,6 @@ export function AppLayout() {
         { to: '/sales', label: t.nav.sales, icon: 'cart' },
         { to: '/sales/new', label: t.nav.newSale, icon: 'plus' },
         { to: '/warehouse', label: t.nav.warehouse, icon: 'box' },
-        { to: '/points', label: t.nav.points, icon: 'store' },
         { to: '/users', label: t.nav.users, icon: 'users' },
         { to: '/notifications', label: t.nav.notifications, icon: 'bell', badge: unread },
         { to: '/settings', label: t.nav.settings, icon: 'settings' },
@@ -58,10 +57,9 @@ export function AppLayout() {
     : [
         { to: '/sales/new', label: t.nav.newSale, icon: 'plus' },
         { to: '/sales', label: t.nav.sales, icon: 'cart' },
-        { to: '/my-stock', label: t.nav.myStock, icon: 'box' },
       ];
 
-  // нижняя навигация (мобильная): 4 вкладки + FAB по центру
+  // нижняя навигация (мобильная): вкладки + FAB по центру
   const tabsLeft: NavEntry[] = isOwner
     ? [
         { to: '/analytics', label: t.nav.analytics, icon: 'chart' },
@@ -70,11 +68,10 @@ export function AppLayout() {
     : [{ to: '/sales', label: t.nav.sales, icon: 'cart' }];
   const tabsRight: NavEntry[] = isOwner
     ? [{ to: '/warehouse', label: t.nav.warehouse, icon: 'box' }]
-    : [{ to: '/my-stock', label: t.nav.myStock, icon: 'box' }];
+    : [];
 
   const moreItems: NavEntry[] = isOwner
     ? [
-        { to: '/points', label: t.nav.points, icon: 'store' },
         { to: '/users', label: t.nav.users, icon: 'users' },
         { to: '/notifications', label: t.nav.notifications, icon: 'bell', badge: unread },
         { to: '/settings', label: t.nav.settings, icon: 'settings' },
@@ -100,7 +97,7 @@ export function AppLayout() {
           <div className="brand-mark">К</div>
           <div>
             <div className="brand-name">{t.appName}</div>
-            <div className="brand-sub">{user?.point?.name ?? t.tagline}</div>
+            <div className="brand-sub">{t.tagline}</div>
           </div>
         </div>
         <nav className="sidebar-nav">
@@ -227,10 +224,7 @@ export function AppLayout() {
               <div className="avatar">{initials}</div>
               <div>
                 <div className="sheet-user-name">{user?.fullName}</div>
-                <div className="sheet-user-role">
-                  {user ? t.roles[user.role] : ''}
-                  {user?.point ? ` · ${user.point.name}` : ''}
-                </div>
+                <div className="sheet-user-role">{user ? t.roles[user.role] : ''}</div>
               </div>
             </div>
             {moreItems.map((item) => (

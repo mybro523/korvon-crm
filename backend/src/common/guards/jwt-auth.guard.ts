@@ -31,10 +31,7 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Сессия ба охир расид. Аз нав ворид шавед');
     }
 
-    const user = await this.usersRepo.findOne({
-      where: { id: payload.sub },
-      relations: { point: true },
-    });
+    const user = await this.usersRepo.findOne({ where: { id: payload.sub } });
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Корбар ёфт нашуд ё ғайрифаъол карда шудааст');
     }

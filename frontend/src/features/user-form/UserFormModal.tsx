@@ -1,5 +1,4 @@
 import { FormEvent, useState } from 'react';
-import { SalesPoint } from '@/entities/point/types';
 import { usersApi } from '@/entities/user/api';
 import { PublicUser, UserRole } from '@/entities/user/types';
 import { extractError } from '@/shared/api/http';
@@ -11,19 +10,17 @@ import { useToast } from '@/shared/ui/Toast';
 
 interface Props {
   user: PublicUser | null;
-  points: SalesPoint[];
   onClose: () => void;
   onSaved: () => void;
 }
 
-export function UserFormModal({ user, points, onClose, onSaved }: Props) {
+export function UserFormModal({ user, onClose, onSaved }: Props) {
   const t = useT();
   const toast = useToast();
   const [fullName, setFullName] = useState(user?.fullName ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>(user?.role ?? 'SELLER');
-  const [pointId, setPointId] = useState(user?.pointId ?? '');
   const [isActive, setIsActive] = useState(user?.isActive ?? true);
   const [saving, setSaving] = useState(false);
 
@@ -37,7 +34,6 @@ export function UserFormModal({ user, points, onClose, onSaved }: Props) {
           username: username.trim(),
           ...(password ? { password } : {}),
           role,
-          pointId: role === 'SELLER' ? pointId || null : null,
           isActive,
         });
       } else {
@@ -46,7 +42,6 @@ export function UserFormModal({ user, points, onClose, onSaved }: Props) {
           username: username.trim(),
           password,
           role,
-          ...(role === 'SELLER' && pointId ? { pointId } : {}),
         });
       }
       toast.success(t.common.saved);
@@ -94,22 +89,6 @@ export function UserFormModal({ user, points, onClose, onSaved }: Props) {
             <option value="SELLER">{t.roles.SELLER}</option>
             <option value="OWNER">{t.roles.OWNER}</option>
           </Select>
-          {role === 'SELLER' && (
-            <div className="full">
-              <Select
-                label={t.users.point}
-                value={pointId ?? ''}
-                onChange={(e) => setPointId(e.target.value)}
-              >
-                <option value="">{t.users.noPoint}</option>
-                {points.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-          )}
           {user && (
             <div className="full field">
               <label className="field-label" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

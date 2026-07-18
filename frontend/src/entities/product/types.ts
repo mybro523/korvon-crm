@@ -4,7 +4,9 @@ export interface Product {
   category: string | null;
   unit: string;
   costPrice: number;
+  sellPrice: number;
   quantity: number;
+  description: string | null;
   arrivalDate: string;
   hasPhoto: boolean;
   photoRev: number;
@@ -17,7 +19,9 @@ export interface ProductPayload {
   category?: string;
   unit?: string;
   costPrice?: number;
+  sellPrice?: number;
   quantity?: number;
+  description?: string;
   arrivalDate?: string;
   /** data-URL для замены, '' — удалить, undefined — не менять */
   photo?: string;

@@ -24,9 +24,16 @@ export class Product {
   @Column({ type: 'numeric', precision: 14, scale: 2, transformer: decimalTransformer })
   costPrice: number;
 
+  /** цена продажи (розница по умолчанию) */
+  @Column({ type: 'numeric', precision: 14, scale: 2, default: 0, transformer: decimalTransformer })
+  sellPrice: number;
+
   /** остаток на складе */
   @Column({ type: 'numeric', precision: 14, scale: 3, default: 0, transformer: decimalTransformer })
   quantity: number;
+
+  @Column({ type: 'text', nullable: true })
+  description: string | null;
 
   @Column({ type: 'date' })
   arrivalDate: string;

@@ -39,8 +39,7 @@ export class ExportService {
     const qb = this.salesRepo.createQueryBuilder('s').orderBy('s.createdAt', 'ASC');
     if (q.from) qb.andWhere('s.createdAt >= :from', { from: normalizeFrom(q.from) });
     if (q.to) qb.andWhere('s.createdAt <= :to', { to: normalizeTo(q.to) });
-    if (q.pointId) qb.andWhere('s.pointId = :pointId', { pointId: q.pointId });
-    if (q.source) qb.andWhere('s.source = :source', { source: q.source });
+    if (q.sellerId) qb.andWhere('s.sellerId = :sellerId', { sellerId: q.sellerId });
     if (q.paymentMethod) qb.andWhere('s.paymentMethod = :pm', { pm: q.paymentMethod });
     if (q.saleType) qb.andWhere('s.saleType = :st', { st: q.saleType });
     if (q.search) {
@@ -60,7 +59,6 @@ export class ExportService {
       { header: 'Маблағи умумӣ (сомонӣ)', key: 'total', width: 20 },
       { header: 'Намуди фурӯш', key: 'type', width: 14 },
       { header: 'Тарзи пардохт', key: 'payment', width: 14 },
-      { header: 'Ҷои фурӯш', key: 'place', width: 20 },
       { header: 'Фурӯшанда', key: 'seller', width: 22 },
     ];
 
@@ -75,7 +73,6 @@ export class ExportService {
         total: s.totalAmount,
         type: SALE_TYPE_LABEL[s.saleType],
         payment: PAYMENT_LABEL[s.paymentMethod],
-        place: s.pointName ?? 'Анбор',
         seller: s.sellerName,
       });
     });

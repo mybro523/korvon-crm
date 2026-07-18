@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/app/providers/AuthProvider';
-import { pointsApi } from '@/entities/point/api';
-import { SalesPoint } from '@/entities/point/types';
 import { usersApi } from '@/entities/user/api';
 import { PublicUser } from '@/entities/user/types';
 import { UserFormModal } from '@/features/user-form/UserFormModal';
@@ -19,7 +17,6 @@ export function UsersPage() {
   const toast = useToast();
   const { user: me } = useAuth();
   const [users, setUsers] = useState<PublicUser[]>([]);
-  const [points, setPoints] = useState<SalesPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<PublicUser | null>(null);
@@ -27,11 +24,9 @@ export function UsersPage() {
   const [deleteBusy, setDeleteBusy] = useState(false);
 
   const load = useCallback(() => {
-    Promise.all([usersApi.list(), pointsApi.list()])
-      .then(([u, p]) => {
-        setUsers(u);
-        setPoints(p);
-      })
+    usersApi
+      .list()
+      .then(setUsers)
       .catch((e) => toast.error(extractError(e)))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -88,7 +83,6 @@ export function UsersPage() {
                   <th>{t.users.fullName}</th>
                   <th>{t.users.username}</th>
                   <th>{t.users.role}</th>
-                  <th>{t.users.point}</th>
                   <th>{t.users.status}</th>
                   <th>{t.users.createdAt}</th>
                   <th />
@@ -106,7 +100,6 @@ export function UsersPage() {
                         <Badge variant="gray">{t.roles.SELLER}</Badge>
                       )}
                     </td>
-                    <td data-label={t.users.point}>{u.point?.name ?? '—'}</td>
                     <td data-label={t.users.status}>
                       {u.isActive ? (
                         <Badge variant="success">{t.users.active}</Badge>
@@ -154,7 +147,6 @@ export function UsersPage() {
       {formOpen && (
         <UserFormModal
           user={editing}
-          points={points}
           onClose={() => setFormOpen(false)}
           onSaved={load}
         />

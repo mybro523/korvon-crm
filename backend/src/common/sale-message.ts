@@ -36,12 +36,10 @@ export function buildSaleMessage(sale: Sale, html: boolean): string {
   const b = html ? (s: string) => `<b>${s}</b>` : (s: string) => s;
   // эмодзи — только в Telegram; интерфейс системы без стикеров
   const e = (emoji: string) => (html ? `${emoji} ` : '');
-  const place = sale.pointName ? esc(sale.pointName) : 'Анбор';
 
   return [
     `${e('🛒')}${b('Фурӯши нав!')}`,
     `${e('📅')}Сана ва вақт: ${fmtDateTime(sale.createdAt)}`,
-    `${e('🏬')}Ҷои фурӯш: ${place}`,
     `${e('👤')}Фурӯшанда: ${esc(sale.sellerName)}`,
     `${e('📦')}Мол: ${esc(sale.productName)}`,
     `${e('🔢')}Миқдор: ${fmtQty(sale.quantity)} ${esc(sale.unit)}`,

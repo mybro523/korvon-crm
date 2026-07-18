@@ -5,8 +5,7 @@ export const t = {
 
   nav: {
     analytics: 'Таҳлил',
-    warehouse: 'Анбор',
-    points: 'Нуқтаҳои фурӯш',
+    warehouse: 'Молҳо',
     sales: 'Фурӯшҳо',
     newSale: 'Фурӯши нав',
     users: 'Корбарон',
@@ -64,7 +63,7 @@ export const t = {
   },
 
   warehouse: {
-    title: 'Анбор',
+    title: 'Молҳо',
     subtitle: 'Идоракунии молҳо ва захираҳо',
     addProduct: 'Иловаи мол',
     editProduct: 'Таҳрири мол',
@@ -73,7 +72,10 @@ export const t = {
     allCategories: 'Ҳамаи категорияҳо',
     unit: 'Воҳиди ченак',
     costPrice: 'Арзиши аслӣ',
+    sellPrice: 'Нархи фурӯш',
     quantity: 'Миқдор',
+    description: 'Тавсиф',
+    descriptionPlaceholder: 'Маълумоти иловагӣ дар бораи мол (ихтиёрӣ)',
     arrivalDate: 'Санаи воридот',
     totalValue: 'Арзиши умумӣ',
     warehouseValue: 'Арзиши анбор',
@@ -171,7 +173,7 @@ export const t = {
     itemsSold: 'Мол фурӯхта шуд',
     profit: 'Фоида',
     dailyChart: 'Динамикаи фурӯш',
-    byPointsChart: 'Фурӯш аз рӯи нуқтаҳо',
+    bySellersChart: 'Фурӯш аз рӯи фурӯшандагон',
     topProducts: 'Молҳои серхаридор',
     paymentSplit: 'Тақсимоти пардохт',
     noData: 'Дар ин давра фурӯш нест',

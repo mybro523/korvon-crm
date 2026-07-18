@@ -12,7 +12,6 @@ export interface UserPayload {
   username?: string;
   password?: string;
   role?: UserRole;
-  pointId?: string | null;
   isActive?: boolean;
 }
 

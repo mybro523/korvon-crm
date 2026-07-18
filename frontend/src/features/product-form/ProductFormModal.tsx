@@ -27,7 +27,9 @@ export function ProductFormModal({ product, categories, onClose, onSaved }: Prop
   const [category, setCategory] = useState(product?.category ?? '');
   const [unit, setUnit] = useState(product?.unit ?? t.warehouse.unitPlaceholder);
   const [costPrice, setCostPrice] = useState(product ? String(product.costPrice) : '');
+  const [sellPrice, setSellPrice] = useState(product ? String(product.sellPrice) : '');
   const [quantity, setQuantity] = useState(product ? String(product.quantity) : '');
+  const [description, setDescription] = useState(product?.description ?? '');
   const [arrivalDate, setArrivalDate] = useState(
     product?.arrivalDate ?? dayjs().format('YYYY-MM-DD'),
   );
@@ -69,6 +71,8 @@ export function ProductFormModal({ product, categories, onClose, onSaved }: Prop
         category: category.trim(),
         unit: unit.trim(),
         costPrice: parseFloat(costPrice) || 0,
+        sellPrice: parseFloat(sellPrice) || 0,
+        description: description.trim(),
         arrivalDate,
         ...(photo !== undefined ? { photo } : {}),
       };
@@ -145,6 +149,15 @@ export function ProductFormModal({ product, categories, onClose, onSaved }: Prop
             required
           />
           <Input
+            label={`${t.warehouse.sellPrice} (${t.common.somoni})`}
+            type="number"
+            min="0"
+            step="0.01"
+            value={sellPrice}
+            onChange={(e) => setSellPrice(e.target.value)}
+            required
+          />
+          <Input
             label={t.warehouse.quantity}
             type="number"
             min="0"
@@ -153,13 +166,22 @@ export function ProductFormModal({ product, categories, onClose, onSaved }: Prop
             onChange={(e) => setQuantity(e.target.value)}
             required
           />
-          <div className="full">
-            <Input
-              label={t.warehouse.arrivalDate}
-              type="date"
-              value={arrivalDate}
-              onChange={(e) => setArrivalDate(e.target.value)}
-              required
+          <Input
+            label={t.warehouse.arrivalDate}
+            type="date"
+            value={arrivalDate}
+            onChange={(e) => setArrivalDate(e.target.value)}
+            required
+          />
+          <div className="full field">
+            <label className="field-label">{t.warehouse.description}</label>
+            <textarea
+              className="field-input"
+              style={{ height: 'auto', minHeight: 70, padding: '10px 12px', resize: 'vertical' }}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t.warehouse.descriptionPlaceholder}
+              maxLength={2000}
             />
           </div>
 

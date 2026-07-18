@@ -5,8 +5,6 @@ export interface PublicUser {
   fullName: string;
   username: string;
   role: UserRole;
-  pointId: string | null;
-  point: { id: string; name: string } | null;
   isActive: boolean;
   createdAt: string;
 }

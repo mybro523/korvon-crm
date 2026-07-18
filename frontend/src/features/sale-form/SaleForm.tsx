@@ -1,14 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useAuth } from '@/app/providers/AuthProvider';
-import { pointsApi } from '@/entities/point/api';
-import { SalesPoint } from '@/entities/point/types';
 import { salesApi } from '@/entities/sale/api';
-import {
-  AvailableProduct,
-  PaymentMethod,
-  SaleSource,
-  SaleType,
-} from '@/entities/sale/types';
+import { AvailableProduct, PaymentMethod, SaleType } from '@/entities/sale/types';
 import { extractError } from '@/shared/api/http';
 import { useT } from '@/shared/i18n';
 import { fmtMoney, fmtQty } from '@/shared/lib/format';
@@ -24,11 +17,7 @@ export function SaleForm() {
   const t = useT();
   const { user } = useAuth();
   const toast = useToast();
-  const isOwner = user?.role === 'OWNER';
 
-  const [source, setSource] = useState<SaleSource>(isOwner ? 'WAREHOUSE' : 'POINT');
-  const [points, setPoints] = useState<SalesPoint[]>([]);
-  const [pointId, setPointId] = useState(isOwner ? '' : user?.pointId ?? '');
   const [products, setProducts] = useState<AvailableProduct[]>([]);
   const [productId, setProductId] = useState('');
   const [saleType, setSaleType] = useState<SaleType>('RETAIL');
@@ -36,25 +25,14 @@ export function SaleForm() {
   const [quantity, setQuantity] = useState('');
   const [unitPrice, setUnitPrice] = useState('');
   const [totalAmount, setTotalAmount] = useState('');
+  const [priceTouched, setPriceTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    if (isOwner) {
-      pointsApi.list().then(setPoints).catch(() => {});
-    }
-  }, [isOwner]);
-
-  useEffect(() => {
-    setProductId('');
-    const needPoint = source === 'POINT';
-    if (needPoint && !pointId) {
-      setProducts([]);
-      return;
-    }
-    let ignore = false; // защита от гонки при быстрой смене источника/точки
+    let ignore = false;
     salesApi
-      .availableProducts(source, needPoint ? pointId : undefined)
+      .availableProducts()
       .then((d) => {
         if (!ignore) setProducts(d);
       })
@@ -64,9 +42,18 @@ export function SaleForm() {
     return () => {
       ignore = true;
     };
-  }, [source, pointId, reloadKey]);
+  }, [reloadKey]);
 
   const selected = products.find((p) => p.productId === productId);
+
+  // при выборе товара подставляем его цену продажи (если пользователь не менял вручную)
+  useEffect(() => {
+    if (selected && saleType === 'RETAIL' && !priceTouched) {
+      setUnitPrice(selected.sellPrice > 0 ? String(selected.sellPrice) : '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productId, saleType]);
+
   const qty = parseFloat(quantity) || 0;
   const price = parseFloat(unitPrice) || 0;
   const total = parseFloat(totalAmount) || 0;
@@ -76,11 +63,7 @@ export function SaleForm() {
   const computedUnit = saleType === 'WHOLESALE' && qty > 0 ? round2(total / qty) : 0;
 
   const valid =
-    !!productId &&
-    qty > 0 &&
-    !tooMuch &&
-    (saleType === 'RETAIL' ? price > 0 : total > 0) &&
-    (source === 'WAREHOUSE' || !!pointId);
+    !!productId && qty > 0 && !tooMuch && (saleType === 'RETAIL' ? price > 0 : total > 0);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -88,8 +71,6 @@ export function SaleForm() {
     setSaving(true);
     try {
       const sale = await salesApi.create({
-        source,
-        ...(source === 'POINT' ? { pointId } : {}),
         productId,
         saleType,
         paymentMethod,
@@ -103,6 +84,7 @@ export function SaleForm() {
       setUnitPrice('');
       setTotalAmount('');
       setProductId('');
+      setPriceTouched(false);
       setReloadKey((k) => k + 1);
     } catch (err) {
       toast.error(extractError(err));
@@ -111,70 +93,18 @@ export function SaleForm() {
     }
   };
 
-  // продавец без привязанной точки — понятное сообщение вместо пустой формы
-  if (!isOwner && !user?.pointId) {
-    return (
-      <div className="card card-pad" style={{ maxWidth: 680 }}>
-        <p
-          style={{
-            margin: 0,
-            color: 'var(--ink-2)',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 9,
-          }}
-        >
-          <Icon name="alert" size={19} /> {t.sales.noPointAssigned}
-        </p>
-      </div>
-    );
-  }
+  // продавец без доступа: если товаров нет — покажем пустое состояние ниже
+  if (!user) return null;
 
   return (
     <form onSubmit={onSubmit} className="card card-pad sale-form" style={{ maxWidth: 680 }}>
-      {/* источник: склад или точка (только владелец) */}
-      {isOwner && (
-        <div className="field">
-          <span className="field-label">{t.sales.source}</span>
-          <div className="seg-group">
-            <button
-              type="button"
-              className={`seg-option ${source === 'WAREHOUSE' ? 'active' : ''}`}
-              onClick={() => setSource('WAREHOUSE')}
-            >
-              {t.sales.fromWarehouse}
-            </button>
-            <button
-              type="button"
-              className={`seg-option ${source === 'POINT' ? 'active' : ''}`}
-              onClick={() => setSource('POINT')}
-            >
-              {t.sales.fromPoint}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {isOwner && source === 'POINT' && (
-        <Select
-          label={t.users.point}
-          value={pointId}
-          onChange={(e) => setPointId(e.target.value)}
-          required
-        >
-          <option value="">{t.sales.selectPoint}</option>
-          {points.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </Select>
-      )}
-
       <Select
         label={t.sales.product}
         value={productId}
-        onChange={(e) => setProductId(e.target.value)}
+        onChange={(e) => {
+          setProductId(e.target.value);
+          setPriceTouched(false);
+        }}
         required
       >
         <option value="">{t.sales.selectProduct}</option>
@@ -197,6 +127,7 @@ export function SaleForm() {
             <div className="sale-product-name">{selected.name}</div>
             <div className="hint-text">
               {fmtQty(selected.available)} {selected.unit} {t.sales.available}
+              {selected.sellPrice > 0 ? ` · ${fmtMoney(selected.sellPrice)}` : ''}
             </div>
           </div>
         </div>
@@ -247,7 +178,10 @@ export function SaleForm() {
             min="0.01"
             step="0.01"
             value={unitPrice}
-            onChange={(e) => setUnitPrice(e.target.value)}
+            onChange={(e) => {
+              setUnitPrice(e.target.value);
+              setPriceTouched(true);
+            }}
             required
           />
         ) : (

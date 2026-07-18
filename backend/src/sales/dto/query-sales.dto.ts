@@ -9,7 +9,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
-import { PaymentMethod, SaleSource, SaleType } from '../../entities';
+import { PaymentMethod, SaleType } from '../../entities';
 
 export class QuerySalesDto {
   @IsOptional()
@@ -34,10 +34,6 @@ export class QuerySalesDto {
   to?: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'Нуқтаи фурӯш нодуруст аст' })
-  pointId?: string;
-
-  @IsOptional()
   @IsUUID('4', { message: 'Фурӯшанда нодуруст аст' })
   sellerId?: string;
 
@@ -48,10 +44,6 @@ export class QuerySalesDto {
   @IsOptional()
   @IsIn(['WHOLESALE', 'RETAIL'], { message: 'Намуди фурӯш нодуруст аст' })
   saleType?: SaleType;
-
-  @IsOptional()
-  @IsIn(['WAREHOUSE', 'POINT'], { message: 'Ҷои фурӯш нодуруст аст' })
-  source?: SaleSource;
 
   @IsOptional()
   @IsString({ message: 'Ҷустуҷӯ нодуруст аст' })

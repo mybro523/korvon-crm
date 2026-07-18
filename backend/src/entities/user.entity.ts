@@ -1,12 +1,4 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
-import { SalesPoint } from './sales-point.entity';
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 export type UserRole = 'OWNER' | 'SELLER';
 
@@ -26,13 +18,6 @@ export class User {
 
   @Column({ type: 'varchar', default: 'SELLER' })
   role: UserRole;
-
-  @Column({ type: 'uuid', nullable: true })
-  pointId: string | null;
-
-  @ManyToOne(() => SalesPoint, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'pointId' })
-  point: SalesPoint | null;
 
   @Column({ default: true })
   isActive: boolean;

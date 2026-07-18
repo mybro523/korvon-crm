@@ -35,10 +35,22 @@ export class UpdateProductDto {
 
   @IsOptional()
   @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Нархи фурӯш нодуруст аст' })
+  @Min(0, { message: 'Нархи фурӯш манфӣ буда наметавонад' })
+  @Max(MAX_MONEY, { message: MSG_TOO_BIG })
+  sellPrice?: number;
+
+  @IsOptional()
+  @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 3 }, { message: 'Миқдор нодуруст аст' })
   @Min(0, { message: 'Миқдор манфӣ буда наметавонад' })
   @Max(MAX_QTY, { message: MSG_TOO_BIG })
   quantity?: number;
+
+  @IsOptional()
+  @IsString({ message: 'Тавсиф нодуруст аст' })
+  @MaxLength(2000, { message: 'Тавсиф хеле дароз аст' })
+  description?: string;
 
   @IsOptional()
   @IsDateString({}, { message: 'Санаи воридот нодуруст аст' })

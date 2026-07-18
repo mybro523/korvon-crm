@@ -8,7 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
 import { Repository } from 'typeorm';
 import { publicUser } from '../common/user.util';
-import { SalesPoint, User } from '../entities';
+import { User } from '../entities';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -16,14 +16,10 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
-    @InjectRepository(SalesPoint) private readonly pointsRepo: Repository<SalesPoint>,
   ) {}
 
   async findAll() {
-    const users = await this.usersRepo.find({
-      relations: { point: true },
-      order: { createdAt: 'ASC' },
-    });
+    const users = await this.usersRepo.find({ order: { createdAt: 'ASC' } });
     return users.map(publicUser);
   }
 
@@ -32,20 +28,14 @@ export class UsersService {
     const exists = await this.usersRepo.findOne({ where: { username } });
     if (exists) throw new ConflictException('Ин номи корбар банд аст');
 
-    const pointId = await this.resolvePointId(dto.role, dto.pointId ?? null);
-
     const user = this.usersRepo.create({
       fullName: dto.fullName.trim(),
       username,
       passwordHash: await bcrypt.hash(dto.password, 10),
       role: dto.role,
-      pointId,
     });
     const saved = await this.usersRepo.save(user);
-    return publicUser((await this.usersRepo.findOne({
-      where: { id: saved.id },
-      relations: { point: true },
-    }))!);
+    return publicUser((await this.usersRepo.findOne({ where: { id: saved.id } }))!);
   }
 
   async update(id: string, dto: UpdateUserDto, actor: User) {
@@ -80,17 +70,8 @@ export class UsersService {
     user.role = newRole;
     user.isActive = newActive;
 
-    if (dto.pointId !== undefined) {
-      user.pointId = await this.resolvePointId(user.role, dto.pointId);
-    } else if (user.role === 'OWNER') {
-      user.pointId = null;
-    }
-
     await this.usersRepo.save(user);
-    return publicUser((await this.usersRepo.findOne({
-      where: { id: user.id },
-      relations: { point: true },
-    }))!);
+    return publicUser((await this.usersRepo.findOne({ where: { id: user.id } }))!);
   }
 
   async remove(id: string, actor: User) {
@@ -117,12 +98,5 @@ export class UsersService {
     if (owners === 0) {
       throw new BadRequestException('Соҳиби охирини системаро тағйир додан мумкин нест');
     }
-  }
-
-  private async resolvePointId(role: string, pointId: string | null): Promise<string | null> {
-    if (role === 'OWNER' || !pointId) return null;
-    const point = await this.pointsRepo.findOne({ where: { id: pointId } });
-    if (!point) throw new BadRequestException('Нуқтаи фурӯш ёфт нашуд');
-    return point.id;
   }
 }

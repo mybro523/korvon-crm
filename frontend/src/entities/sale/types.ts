@@ -1,15 +1,11 @@
 export type SaleType = 'WHOLESALE' | 'RETAIL';
 export type PaymentMethod = 'CASH' | 'CARD';
-export type SaleSource = 'WAREHOUSE' | 'POINT';
 
 export interface Sale {
   id: string;
   productId: string | null;
   productName: string;
   unit: string;
-  source: SaleSource;
-  pointId: string | null;
-  pointName: string | null;
   sellerId: string | null;
   sellerName: string;
   saleType: SaleType;
@@ -34,13 +30,12 @@ export interface AvailableProduct {
   category: string | null;
   unit: string;
   available: number;
+  sellPrice: number;
   hasPhoto: boolean;
   photoRev: number;
 }
 
 export interface CreateSalePayload {
-  source: SaleSource;
-  pointId?: string;
   productId: string;
   saleType: SaleType;
   paymentMethod: PaymentMethod;
@@ -54,8 +49,7 @@ export interface SalesFilter {
   limit?: number;
   from?: string;
   to?: string;
-  pointId?: string;
-  source?: SaleSource;
+  sellerId?: string;
   paymentMethod?: PaymentMethod;
   saleType?: SaleType;
   search?: string;

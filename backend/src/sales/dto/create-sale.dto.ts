@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsIn, IsNumber, IsUUID, Max, Min, ValidateIf } from 'class-validator';
-import { PaymentMethod, SaleSource, SaleType } from '../../entities';
+import { PaymentMethod, SaleType } from '../../entities';
 
 /** лимиты колонок numeric(14,2) и numeric(14,3) */
 export const MAX_MONEY = 999_999_999_999.99;
@@ -8,13 +8,6 @@ export const MAX_QTY = 99_999_999_999.999;
 export const MSG_TOO_BIG = 'Қимат аз ҳадди иҷозатшуда зиёд аст';
 
 export class CreateSaleDto {
-  @IsIn(['WAREHOUSE', 'POINT'], { message: 'Ҷои фурӯш нодуруст аст' })
-  source: SaleSource;
-
-  @ValidateIf((o) => o.source === 'POINT')
-  @IsUUID('4', { message: 'Нуқтаи фурӯш нодуруст аст' })
-  pointId?: string;
-
   @IsUUID('4', { message: 'Молро интихоб кунед' })
   productId: string;
 

@@ -9,14 +9,7 @@ import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { EPS, round2, round3 } from '../common/numbers';
 import { buildSaleMessage } from '../common/sale-message';
 import { normalizeFrom, normalizeTo } from '../common/tz';
-import {
-  Notification,
-  PointStock,
-  Product,
-  Sale,
-  SalesPoint,
-  User,
-} from '../entities';
+import { Notification, Product, Sale, User } from '../entities';
 import { SETTING_KEYS, SettingsService } from '../settings/settings.service';
 import { TelegramService } from '../settings/telegram.service';
 import { CreateSaleDto } from './dto/create-sale.dto';
@@ -29,7 +22,6 @@ export class SalesService {
   constructor(
     @InjectRepository(Sale) private readonly salesRepo: Repository<Sale>,
     @InjectRepository(Product) private readonly productsRepo: Repository<Product>,
-    @InjectRepository(PointStock) private readonly stockRepo: Repository<PointStock>,
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
     private readonly dataSource: DataSource,
     private readonly telegramService: TelegramService,
@@ -37,22 +29,6 @@ export class SalesService {
   ) {}
 
   async create(user: User, dto: CreateSaleDto): Promise<Omit<Sale, 'costAtSale'>> {
-    let source = dto.source;
-    let pointId = dto.pointId ?? null;
-
-    // продавец всегда продаёт только из своей точки
-    if (user.role === 'SELLER') {
-      if (!user.pointId) {
-        throw new BadRequestException('Ба шумо нуқтаи фурӯш вобаста карда нашудааст');
-      }
-      source = 'POINT';
-      pointId = user.pointId;
-    }
-    if (source === 'WAREHOUSE') pointId = null;
-    if (source === 'POINT' && !pointId) {
-      throw new BadRequestException('Нуқтаи фурӯшро интихоб кунед');
-    }
-
     const qty = round3(dto.quantity);
     let unitPrice: number;
     let totalAmount: number;
@@ -67,50 +43,24 @@ export class SalesService {
     }
 
     const sale = await this.dataSource.transaction(async (em) => {
-      let pointName: string | null = null;
-      let product: Product | null;
-
-      if (source === 'WAREHOUSE') {
-        product = await em.findOne(Product, {
-          where: { id: dto.productId },
-          lock: { mode: 'pessimistic_write' },
-        });
-        if (!product) throw new NotFoundException('Мол ёфт нашуд');
-        if (product.quantity + EPS < qty) {
-          throw new BadRequestException(
-            `Дар анбор танҳо ${product.quantity} ${product.unit} мавҷуд аст`,
-          );
-        }
-        product.quantity = round3(product.quantity - qty);
-        await em.save(product);
-      } else {
-        const point = await em.findOne(SalesPoint, { where: { id: pointId! } });
-        if (!point) throw new NotFoundException('Нуқтаи фурӯш ёфт нашуд');
-        pointName = point.name;
-
-        product = await em.findOne(Product, { where: { id: dto.productId } });
-        if (!product) throw new NotFoundException('Мол ёфт нашуд');
-
-        const stock = await em.findOne(PointStock, {
-          where: { pointId: pointId!, productId: dto.productId },
-          lock: { mode: 'pessimistic_write' },
-        });
-        if (!stock || stock.quantity + EPS < qty) {
-          throw new BadRequestException(
-            `Дар нуқтаи фурӯш танҳо ${stock?.quantity ?? 0} ${product.unit} мавҷуд аст`,
-          );
-        }
-        stock.quantity = round3(stock.quantity - qty);
-        await em.save(stock);
+      // продажа всегда со склада; блокировка защищает от гонок при параллельных продажах
+      const product = await em.findOne(Product, {
+        where: { id: dto.productId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!product) throw new NotFoundException('Мол ёфт нашуд');
+      if (product.quantity + EPS < qty) {
+        throw new BadRequestException(
+          `Дар анбор танҳо ${product.quantity} ${product.unit} мавҷуд аст`,
+        );
       }
+      product.quantity = round3(product.quantity - qty);
+      await em.save(product);
 
       const saleEntity = em.create(Sale, {
         productId: product.id,
         productName: product.name,
         unit: product.unit,
-        source,
-        pointId,
-        pointName,
         sellerId: user.id,
         sellerName: user.fullName,
         saleType: dto.saleType,
@@ -175,10 +125,6 @@ export class SalesService {
     const page = q.page ?? 1;
     const limit = q.limit ?? 20;
 
-    if (user.role === 'SELLER' && !user.pointId) {
-      return { items: [], total: 0, page, limit, totalAmount: 0 };
-    }
-
     const items = await this.buildFilteredQb(user, q)
       .orderBy('s.createdAt', 'DESC')
       .skip((page - 1) * limit)
@@ -201,12 +147,11 @@ export class SalesService {
   private buildFilteredQb(user: User, q: QuerySalesDto): SelectQueryBuilder<Sale> {
     const qb = this.salesRepo.createQueryBuilder('s');
 
+    // продавец видит только свои продажи; владелец — все (+ фильтр по продавцу)
     if (user.role === 'SELLER') {
-      qb.andWhere('s.pointId = :userPointId', { userPointId: user.pointId });
-    } else {
-      if (q.pointId) qb.andWhere('s.pointId = :pointId', { pointId: q.pointId });
-      if (q.source) qb.andWhere('s.source = :source', { source: q.source });
-      if (q.sellerId) qb.andWhere('s.sellerId = :sellerId', { sellerId: q.sellerId });
+      qb.andWhere('s.sellerId = :uid', { uid: user.id });
+    } else if (q.sellerId) {
+      qb.andWhere('s.sellerId = :sellerId', { sellerId: q.sellerId });
     }
     if (q.from) qb.andWhere('s.createdAt >= :from', { from: normalizeFrom(q.from) });
     if (q.to) qb.andWhere('s.createdAt <= :to', { to: normalizeTo(q.to) });
@@ -218,56 +163,22 @@ export class SalesService {
     return qb;
   }
 
-  /** товары, доступные для продажи из выбранного источника */
-  async availableProducts(user: User, source?: string, pointId?: string) {
-    let src: 'WAREHOUSE' | 'POINT' | null =
-      source === 'WAREHOUSE' ? 'WAREHOUSE' : source === 'POINT' ? 'POINT' : null;
-    let pid = pointId ?? null;
-
-    if (user.role === 'SELLER') {
-      if (!user.pointId) {
-        throw new BadRequestException('Ба шумо нуқтаи фурӯш вобаста карда нашудааст');
-      }
-      src = 'POINT';
-      pid = user.pointId;
-    }
-
-    if (src === 'WAREHOUSE') {
-      const products = await this.productsRepo
-        .createQueryBuilder('p')
-        .where('p.quantity > 0')
-        .orderBy('p.name', 'ASC')
-        .getMany();
-      return products.map((p) => ({
-        productId: p.id,
-        name: p.name,
-        category: p.category,
-        unit: p.unit,
-        available: p.quantity,
-        hasPhoto: p.hasPhoto,
-        photoRev: p.photoRev,
-      }));
-    }
-
-    if (!pid) throw new BadRequestException('Нуқтаи фурӯшро интихоб кунед');
-
-    const rows = await this.stockRepo
-      .createQueryBuilder('s')
-      .leftJoinAndSelect('s.product', 'p')
-      .where('s.pointId = :pid AND s.quantity > 0', { pid })
+  /** товары со склада, доступные для продажи (остаток > 0) */
+  async availableProducts() {
+    const products = await this.productsRepo
+      .createQueryBuilder('p')
+      .where('p.quantity > 0')
+      .orderBy('p.name', 'ASC')
       .getMany();
-
-    return rows
-      .filter((r) => r.product)
-      .map((r) => ({
-        productId: r.productId,
-        name: r.product.name,
-        category: r.product.category,
-        unit: r.product.unit,
-        available: r.quantity,
-        hasPhoto: r.product.hasPhoto,
-        photoRev: r.product.photoRev,
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name, 'tg'));
+    return products.map((p) => ({
+      productId: p.id,
+      name: p.name,
+      category: p.category,
+      unit: p.unit,
+      available: p.quantity,
+      sellPrice: p.sellPrice,
+      hasPhoto: p.hasPhoto,
+      photoRev: p.photoRev,
+    }));
   }
 }

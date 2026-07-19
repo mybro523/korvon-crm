@@ -29,9 +29,8 @@ export function SaleModal({ product, onClose, onSold, onError }: Props) {
   const [saleType, setSaleType] = useState<SaleType>('RETAIL');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
   const [quantity, setQuantity] = useState('');
-  const [unitPrice, setUnitPrice] = useState(
-    product.sellPrice > 0 ? String(product.sellPrice) : '',
-  );
+  // цена гибкая — назначается при каждой продаже, ничего не подставляем
+  const [unitPrice, setUnitPrice] = useState('');
   const [totalAmount, setTotalAmount] = useState('');
 
   const qty = parseFloat(quantity) || 0;
@@ -82,7 +81,6 @@ export function SaleModal({ product, onClose, onSold, onError }: Props) {
             <div className="sale-product-name">{product.name}</div>
             <div className="hint-text">
               {fmtQty(product.available)} {product.unit} {t.sales.available}
-              {product.sellPrice > 0 ? ` · ${fmtMoney(product.sellPrice)}` : ''}
             </div>
           </div>
         </div>

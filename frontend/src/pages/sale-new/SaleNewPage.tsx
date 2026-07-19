@@ -5,7 +5,7 @@ import { SaleModal } from '@/features/sale-form/SaleModal';
 import { useT } from '@/shared/i18n';
 import { invalidateByPrefix, useCachedQuery } from '@/shared/lib/cache';
 import { mergeCategories } from '@/shared/lib/categories';
-import { fmtMoney, fmtQty } from '@/shared/lib/format';
+import { fmtQty } from '@/shared/lib/format';
 import { productPhotoUrl } from '@/shared/lib/image';
 import { Icon } from '@/shared/ui/Icon';
 import { Badge, EmptyState, TableSkeleton } from '@/shared/ui/misc';
@@ -147,9 +147,7 @@ export function SaleNewPage() {
                   <span className="shop-card-cat">{p.category ?? ' '}</span>
                   <span className="shop-card-name">{p.name}</span>
                   <div className="shop-card-row">
-                    <span className="shop-card-price">
-                      {p.sellPrice > 0 ? fmtMoney(p.sellPrice) : '—'}
-                    </span>
+                    {/* цена гибкая — на карточке показываем только остаток */}
                     <span className="shop-card-stock">
                       {fmtQty(p.available)} {p.unit}
                     </span>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import {
   Area,
@@ -145,18 +145,22 @@ export function AnalyticsPage() {
     'analytics:inventory',
     () => analyticsApi.inventory(),
   );
-  const [invList, setInvList] = useState<'low' | 'out' | null>(null);
+  const [invList, setInvList] = useState<InvKind | null>(null);
 
-  // цифры могли устареть после продаж/трансферов на других страницах — обновляем при возврате
+  // цифры могли устареть после продаж/трансферов на других страницах — обновляем при возврате.
+  // refetch из ЗАМЫКАНИЯ первого рендера писал бы данные текущего периода под СТАРЫЙ ключ кэша —
+  // поэтому держим всегда-свежий refetch в ref
+  const refetchRef = useRef(() => {});
+  refetchRef.current = () => {
+    refetch();
+    refetchInv();
+  };
   useEffect(() => {
     const onFocus = () => {
-      if (document.visibilityState !== 'visible') return;
-      refetch();
-      refetchInv();
+      if (document.visibilityState === 'visible') refetchRef.current();
     };
     document.addEventListener('visibilitychange', onFocus);
     return () => document.removeEventListener('visibilitychange', onFocus);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // закрываем модалку детализации при смене периода
@@ -472,29 +476,28 @@ export function AnalyticsPage() {
               label={t.analytics.positions}
               value={String(inv.productsCount)}
               sub={`${t.analytics.unitsTotal}: ${unitsStr((u) => u.warehouse + u.shop)}`}
+              onClick={inv.productsCount > 0 ? () => setInvList('positions') : undefined}
             />
             <StatTile
               icon="store"
               label={t.stock.inWarehouse}
               value={unitsStr((u) => u.warehouse)}
               sub={fmtMoney(inv.warehouseCost)}
+              onClick={inv.warehouseUnits > 0 ? () => setInvList('warehouse') : undefined}
             />
             <StatTile
               icon="cart"
               label={t.stock.inShop}
               value={unitsStr((u) => u.shop)}
               sub={fmtMoney(inv.shopCost)}
+              onClick={inv.shopUnits > 0 ? () => setInvList('shop') : undefined}
             />
             <StatTile
               icon="cash"
               label={t.analytics.inventoryCost}
               value={fmtMoney(inv.inventoryCost)}
-            />
-            <StatTile
-              icon="chart"
-              label={t.analytics.potentialRevenue}
-              value={fmtMoney(inv.potentialRevenue)}
-              sub={`${t.analytics.potentialProfit}: ${fmtMoney(inv.potentialProfit)}`}
+              sub={inv.inventoryCost > 0 ? t.analytics.clickHint : undefined}
+              onClick={inv.inventoryCost > 0 ? () => setInvList('value') : undefined}
             />
             <StatTile
               icon="alert"
@@ -563,63 +566,153 @@ export function AnalyticsPage() {
       )}
 
       {invList && inv && (
-        <Modal
-          title={invList === 'low' ? t.analytics.lowStockCount : t.analytics.outOfStockCount}
-          onClose={() => setInvList(null)}
-          width={480}
-        >
-          {invList === 'low' ? (
-            inv.lowStockItems.length === 0 ? (
-              <EmptyState text={t.analytics.noProblems} icon="box" />
-            ) : (
-              <>
-                <div className="detail-list">
-                  {inv.lowStockItems.map((p) => (
-                    <div key={p.id} className="detail-row">
-                      <div className="detail-row-main">
-                        <div className="detail-row-title">{p.name}</div>
-                        <div className="detail-row-sub">
-                          {t.stock.inWarehouse}: {fmtQty(p.warehouseQty)} {p.unit}
-                        </div>
-                      </div>
-                      <div className="detail-row-amount" style={{ color: 'var(--warn, #b45309)' }}>
-                        {t.stock.inShop}: {fmtQty(p.shopQty)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {inv.lowStockCount > inv.lowStockItems.length && (
-                  <p className="hint-text">
-                    {t.analytics.shownFirst}: {inv.lowStockItems.length} / {inv.lowStockCount}
-                  </p>
-                )}
-              </>
-            )
-          ) : inv.outOfStockItems.length === 0 ? (
-            <EmptyState text={t.analytics.noProblems} icon="box" />
-          ) : (
-            <>
-              <div className="detail-list">
-                {inv.outOfStockItems.map((p) => (
-                  <div key={p.id} className="detail-row">
-                    <div className="detail-row-main">
-                      <div className="detail-row-title">{p.name}</div>
-                    </div>
-                    <div className="detail-row-amount" style={{ color: 'var(--danger, #b91c1c)' }}>
-                      {t.warehouse.outOfStock}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {inv.outOfStockCount > inv.outOfStockItems.length && (
-                <p className="hint-text">
-                  {t.analytics.shownFirst}: {inv.outOfStockItems.length} / {inv.outOfStockCount}
-                </p>
-              )}
-            </>
-          )}
-        </Modal>
+        <InventoryListModal kind={invList} inv={inv} onClose={() => setInvList(null)} />
       )}
     </>
+  );
+}
+
+type InvKind = 'positions' | 'warehouse' | 'shop' | 'value' | 'low' | 'out';
+
+/** модалка разбивки по товарам для кликабельных тайлов «Аналитики склада» */
+function InventoryListModal({
+  kind,
+  inv,
+  onClose,
+}: {
+  kind: InvKind;
+  inv: InventoryStats;
+  onClose: () => void;
+}) {
+  const t = useT();
+
+  interface Row {
+    id: string;
+    name: string;
+    sub?: string;
+    right: string;
+    rightColor?: string;
+  }
+
+  let title: string;
+  let rows: Row[];
+  /** сколько всего позиций попадает под фильтр (для индикатора «показаны первые N») */
+  let totalCount: number;
+
+  switch (kind) {
+    case 'low':
+      title = t.analytics.lowStockCount;
+      totalCount = inv.lowStockCount;
+      rows = inv.lowStockItems.map((p) => ({
+        id: p.id,
+        name: p.name,
+        sub: `${t.stock.inWarehouse}: ${fmtQty(p.warehouseQty)} ${p.unit}`,
+        right: `${t.stock.inShop}: ${fmtQty(p.shopQty)}`,
+        rightColor: 'var(--warn, #b45309)',
+      }));
+      break;
+    case 'out':
+      title = t.analytics.outOfStockCount;
+      totalCount = inv.outOfStockCount;
+      rows = inv.outOfStockItems.map((p) => ({
+        id: p.id,
+        name: p.name,
+        right: t.warehouse.outOfStock,
+        rightColor: 'var(--danger, #b91c1c)',
+      }));
+      break;
+    case 'warehouse':
+      title = t.stock.inWarehouse;
+      rows = inv.items
+        .filter((p) => p.warehouseQty > 0)
+        .sort((a, b) => b.warehouseValue - a.warehouseValue)
+        .map((p) => ({
+          id: p.id,
+          name: p.name,
+          sub: `${fmtQty(p.warehouseQty)} ${p.unit}`,
+          right: fmtMoney(p.warehouseValue),
+        }));
+      totalCount = rows.length;
+      break;
+    case 'shop':
+      title = t.stock.inShop;
+      rows = inv.items
+        .filter((p) => p.shopQty > 0)
+        .sort((a, b) => b.shopValue - a.shopValue)
+        .map((p) => ({
+          id: p.id,
+          name: p.name,
+          sub: `${fmtQty(p.shopQty)} ${p.unit}`,
+          right: fmtMoney(p.shopValue),
+        }));
+      totalCount = rows.length;
+      break;
+    case 'value':
+      title = t.analytics.inventoryCost;
+      rows = inv.items
+        .filter((p) => p.totalValue > 0)
+        .map((p) => ({
+          id: p.id,
+          name: p.name,
+          sub: `${t.stock.inWarehouse}: ${fmtQty(p.warehouseQty)} ${p.unit} · ${t.stock.inShop}: ${fmtQty(p.shopQty)} ${p.unit}`,
+          right: fmtMoney(p.totalValue),
+        }));
+      totalCount = rows.length;
+      break;
+    default:
+      // positions: все товары — склад/точка/стоимость
+      title = t.analytics.positions;
+      totalCount = inv.productsCount;
+      rows = inv.items.map((p) => ({
+        id: p.id,
+        name: p.name,
+        sub: `${t.stock.inWarehouse}: ${fmtQty(p.warehouseQty)} ${p.unit} · ${t.stock.inShop}: ${fmtQty(p.shopQty)} ${p.unit}`,
+        right: fmtMoney(p.totalValue),
+      }));
+  }
+
+  // Индикатор усечения — по смыслу каждого вида:
+  // low/out/positions знают точный полный счётчик с бэкенда → «N / всего»;
+  // warehouse/shop/value фильтруют уже обрезанный items (LIMIT 1000) — полное число
+  // на клиенте неизвестно, поэтому знаменатель не показываем.
+  const itemsTruncated = inv.productsCount > inv.items.length;
+  let truncHint: string | null = null;
+  if (kind === 'low' || kind === 'out' || kind === 'positions') {
+    if (totalCount > rows.length) {
+      truncHint = `${t.analytics.shownFirst}: ${rows.length} / ${totalCount}`;
+    }
+  } else if (itemsTruncated) {
+    truncHint = `${t.analytics.shownFirst}: ${rows.length}`;
+  }
+
+  return (
+    <Modal title={title} onClose={onClose} width={480}>
+      {rows.length === 0 ? (
+        <EmptyState
+          text={kind === 'low' || kind === 'out' ? t.analytics.noProblems : undefined}
+          icon="box"
+        />
+      ) : (
+        <>
+          <div className="detail-list">
+            {rows.map((r) => (
+              <div key={r.id} className="detail-row">
+                <div className="detail-row-main">
+                  <div className="detail-row-title">{r.name}</div>
+                  {r.sub && <div className="detail-row-sub">{r.sub}</div>}
+                </div>
+                <div
+                  className="detail-row-amount"
+                  style={r.rightColor ? { color: r.rightColor } : undefined}
+                >
+                  {r.right}
+                </div>
+              </div>
+            ))}
+          </div>
+          {truncHint && <p className="hint-text">{truncHint}</p>}
+        </>
+      )}
+    </Modal>
   );
 }

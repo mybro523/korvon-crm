@@ -4,7 +4,6 @@ export interface Product {
   category: string | null;
   unit: string;
   costPrice: number;
-  sellPrice: number;
   /** остаток на складе */
   quantity: number;
   /** остаток в точке продажи */
@@ -24,7 +23,6 @@ export interface ProductPayload {
   category?: string;
   unit?: string;
   costPrice?: number;
-  sellPrice?: number;
   quantity?: number;
   lowStockThreshold?: number;
   description?: string;

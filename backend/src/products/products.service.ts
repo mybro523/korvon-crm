@@ -40,7 +40,6 @@ export class ProductsService {
       category: dto.category?.trim() || null,
       unit: dto.unit.trim(),
       costPrice: round2(dto.costPrice),
-      sellPrice: round2(dto.sellPrice),
       // новый товар поступает на СКЛАД; в точку привозят переносом
       quantity: round3(dto.quantity),
       shopQty: 0,
@@ -67,7 +66,6 @@ export class ProductsService {
       if (dto.category !== undefined) product.category = dto.category?.trim() || null;
       if (dto.unit !== undefined) product.unit = dto.unit.trim();
       if (dto.costPrice !== undefined) product.costPrice = round2(dto.costPrice);
-      if (dto.sellPrice !== undefined) product.sellPrice = round2(dto.sellPrice);
       if (dto.quantity !== undefined) product.quantity = round3(dto.quantity);
       if (dto.lowStockThreshold !== undefined) {
         product.lowStockThreshold = round3(dto.lowStockThreshold);

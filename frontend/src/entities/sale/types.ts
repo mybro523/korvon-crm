@@ -33,7 +33,6 @@ export interface AvailableProduct {
   available: number;
   /** остаток на складе (для подсказки) */
   warehouseQty: number;
-  sellPrice: number;
   hasPhoto: boolean;
   photoRev: number;
 }

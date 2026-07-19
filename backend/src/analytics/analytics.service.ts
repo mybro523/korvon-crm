@@ -107,7 +107,6 @@ export class AnalyticsService {
         COALESCE(SUM(p."costPrice" * (p.quantity + p."shopQty")), 0) AS "inventoryCost",
         COALESCE(SUM(p."costPrice" * p.quantity), 0) AS "warehouseCost",
         COALESCE(SUM(p."costPrice" * p."shopQty"), 0) AS "shopCost",
-        COALESCE(SUM(p."sellPrice" * (p.quantity + p."shopQty")), 0) AS "potentialRevenue",
         COUNT(*) FILTER (WHERE p."shopQty" <= p."lowStockThreshold" AND p.quantity + p."shopQty" > 0)::int AS "lowStockCount",
         COUNT(*) FILTER (WHERE p.quantity + p."shopQty" <= 0)::int AS "outOfStockCount"
       FROM products p`,
@@ -150,20 +149,40 @@ export class AnalyticsService {
       ORDER BY SUM(p.quantity + p."shopQty") DESC`,
     );
 
-    const inventoryCost = num(row.inventoryCost);
-    const potentialRevenue = num(row.potentialRevenue);
+    // полная разбивка по товарам — для кликабельных тайлов (позиции/склад/точка/стоимость)
+    const items = await this.dataSource.query(
+      `SELECT p.id, p.name, p.unit, p.category,
+        p.quantity AS "warehouseQty",
+        p."shopQty",
+        p."costPrice" * p.quantity AS "warehouseValue",
+        p."costPrice" * p."shopQty" AS "shopValue",
+        p."costPrice" * (p.quantity + p."shopQty") AS "totalValue"
+      FROM products p
+      ORDER BY p."costPrice" * (p.quantity + p."shopQty") DESC, p.name ASC
+      LIMIT 1000`,
+    );
+
     return {
       productsCount: row.productsCount,
       warehouseUnits: num(row.warehouseUnits),
       shopUnits: num(row.shopUnits),
       totalUnits: num(row.warehouseUnits) + num(row.shopUnits),
-      inventoryCost,
+      inventoryCost: num(row.inventoryCost),
       warehouseCost: num(row.warehouseCost),
       shopCost: num(row.shopCost),
-      potentialRevenue,
-      potentialProfit: potentialRevenue - inventoryCost,
       lowStockCount: row.lowStockCount,
       outOfStockCount: row.outOfStockCount,
+      items: items.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        unit: r.unit,
+        category: r.category,
+        warehouseQty: num(r.warehouseQty),
+        shopQty: num(r.shopQty),
+        warehouseValue: num(r.warehouseValue),
+        shopValue: num(r.shopValue),
+        totalValue: num(r.totalValue),
+      })),
       unitsBreakdown: unitsBreakdown.map((r: any) => ({
         unit: r.unit,
         warehouse: num(r.warehouse),

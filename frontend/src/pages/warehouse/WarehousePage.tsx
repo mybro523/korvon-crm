@@ -142,7 +142,6 @@ export function WarehousePage() {
                   <th>{t.warehouse.name}</th>
                   <th>{t.warehouse.category}</th>
                   <th className="num">{t.warehouse.costPrice}</th>
-                  <th className="num">{t.warehouse.sellPrice}</th>
                   <th className="num">{t.stock.inWarehouse}</th>
                   <th className="num">{t.stock.inShop}</th>
                   <th>{t.users.status}</th>
@@ -161,9 +160,6 @@ export function WarehousePage() {
                     <td data-label={t.warehouse.category}>{p.category ?? '—'}</td>
                     <td className="num" data-label={t.warehouse.costPrice}>
                       {fmtMoney(p.costPrice)}
-                    </td>
-                    <td className="num" data-label={t.warehouse.sellPrice}>
-                      {fmtMoney(p.sellPrice)}
                     </td>
                     <td className="num" data-label={t.stock.inWarehouse}>
                       {fmtQty(p.quantity)} {p.unit}
@@ -211,7 +207,7 @@ export function WarehousePage() {
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={4} data-label={t.common.total}>
+                  <td colSpan={3} data-label={t.common.total}>
                     {list.length} {t.warehouse.productsCount}
                   </td>
                   {/* сумма склад+точка — накрывает обе колонки остатков */}

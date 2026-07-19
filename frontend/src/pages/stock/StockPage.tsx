@@ -4,7 +4,7 @@ import { Product } from '@/entities/product/types';
 import { extractError } from '@/shared/api/http';
 import { useT } from '@/shared/i18n';
 import { invalidateByPrefix, useCachedQuery } from '@/shared/lib/cache';
-import { fmtMoney, fmtQty } from '@/shared/lib/format';
+import { fmtQty } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { Input } from '@/shared/ui/Input';
@@ -182,7 +182,7 @@ function TransferModal({
       <form onSubmit={submit}>
         <p className="hint-text" style={{ marginTop: 0 }}>
           {t.stock.inWarehouse}: {fmtQty(product.quantity)} {product.unit} · {t.stock.inShop}:{' '}
-          {fmtQty(product.shopQty)} {product.unit} · {fmtMoney(product.sellPrice)}
+          {fmtQty(product.shopQty)} {product.unit}
         </p>
         <Input
           label={`${t.warehouse.quantity} (${product.unit})`}

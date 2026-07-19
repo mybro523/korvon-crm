@@ -990,7 +990,7 @@ table.table { width: 100%; border-collapse: collapse; }
 }
 .detail-row:last-child { border-bottom: none; }
 .detail-row-main { flex: 1; min-width: 0; }
-.detail-row-title { font-weight: 600; font-size: 14px; }
+.detail-row-title { font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
 .detail-row-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .detail-row-amount { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .detail-summary {

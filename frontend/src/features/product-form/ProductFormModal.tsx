@@ -29,7 +29,6 @@ export function ProductFormModal({ product, categories, onClose, onDone }: Props
   const [category, setCategory] = useState(product?.category ?? '');
   const [unit, setUnit] = useState(product?.unit ?? t.warehouse.unitPlaceholder);
   const [costPrice, setCostPrice] = useState(product ? String(product.costPrice) : '');
-  const [sellPrice, setSellPrice] = useState(product ? String(product.sellPrice) : '');
   const [quantity, setQuantity] = useState(product ? String(product.quantity) : '');
   const [lowThreshold, setLowThreshold] = useState(
     product ? String(product.lowStockThreshold) : '15',
@@ -73,7 +72,6 @@ export function ProductFormModal({ product, categories, onClose, onDone }: Props
       category: category.trim(),
       unit: unit.trim(),
       costPrice: parseFloat(costPrice) || 0,
-      sellPrice: parseFloat(sellPrice) || 0,
       lowStockThreshold: parseFloat(lowThreshold) || 0,
       description: description.trim(),
       arrivalDate,
@@ -152,15 +150,6 @@ export function ProductFormModal({ product, categories, onClose, onDone }: Props
             required
           />
           <Input
-            label={`${t.warehouse.sellPrice} (${t.common.somoni})`}
-            type="number"
-            min="0"
-            step="0.01"
-            value={sellPrice}
-            onChange={(e) => setSellPrice(e.target.value)}
-            required
-          />
-          <Input
             label={`${t.warehouse.quantity} (${t.stock.inWarehouse})`}
             type="number"
             min="0"
@@ -178,15 +167,14 @@ export function ProductFormModal({ product, categories, onClose, onDone }: Props
             onChange={(e) => setLowThreshold(e.target.value)}
             required
           />
-          <div className="full">
-            <Input
-              label={t.warehouse.arrivalDate}
-              type="date"
-              value={arrivalDate}
-              onChange={(e) => setArrivalDate(e.target.value)}
-              required
-            />
-          </div>
+          {/* полуширина: встаёт в пару к «Порогу оповещения», иначе дырка в 2-колоночной сетке */}
+          <Input
+            label={t.warehouse.arrivalDate}
+            type="date"
+            value={arrivalDate}
+            onChange={(e) => setArrivalDate(e.target.value)}
+            required
+          />
           <div className="full field">
             <label className="field-label">{t.warehouse.description}</label>
             <textarea

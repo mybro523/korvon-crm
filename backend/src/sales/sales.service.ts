@@ -217,7 +217,6 @@ export class SalesService {
       unit: p.unit,
       available: p.shopQty,
       warehouseQty: p.quantity,
-      sellPrice: p.sellPrice,
       hasPhoto: p.hasPhoto,
       photoRev: p.photoRev,
     }));

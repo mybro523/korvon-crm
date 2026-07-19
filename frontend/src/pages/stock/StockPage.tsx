@@ -3,7 +3,7 @@ import { productsApi } from '@/entities/product/api';
 import { Product } from '@/entities/product/types';
 import { extractError } from '@/shared/api/http';
 import { useT } from '@/shared/i18n';
-import { useCachedQuery } from '@/shared/lib/cache';
+import { invalidateByPrefix, useCachedQuery } from '@/shared/lib/cache';
 import { fmtMoney, fmtQty } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
@@ -42,6 +42,8 @@ export function StockPage() {
           : p,
       ),
     );
+    // распределение склад/точка в аналитике устарело
+    invalidateByPrefix('analytics:');
     productsApi
       .transfer(product.id, qty)
       .then(() => toast.success(t.common.saved))

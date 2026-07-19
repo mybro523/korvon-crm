@@ -30,4 +30,10 @@ export class AnalyticsController {
   bySellers(@Query() q: AnalyticsQueryDto) {
     return this.analyticsService.bySellers(q);
   }
+
+  /** аналитика склада (текущие запасы, без периода) */
+  @Get('inventory')
+  inventory() {
+    return this.analyticsService.inventory();
+  }
 }

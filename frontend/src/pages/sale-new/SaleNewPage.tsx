@@ -3,7 +3,7 @@ import { salesApi } from '@/entities/sale/api';
 import { AvailableProduct } from '@/entities/sale/types';
 import { SaleModal } from '@/features/sale-form/SaleModal';
 import { useT } from '@/shared/i18n';
-import { useCachedQuery } from '@/shared/lib/cache';
+import { invalidateByPrefix, useCachedQuery } from '@/shared/lib/cache';
 import { mergeCategories } from '@/shared/lib/categories';
 import { fmtMoney, fmtQty } from '@/shared/lib/format';
 import { productPhotoUrl } from '@/shared/lib/image';
@@ -59,6 +59,8 @@ export function SaleNewPage() {
         p.productId === productId ? { ...p, available: p.available - qty } : p,
       ),
     );
+    // цифры аналитики устарели — при следующем открытии страницы перезагрузятся
+    invalidateByPrefix('analytics:');
   };
   /** ошибка сервера: дельта-откат + рефетч для сходимости с серверной правдой */
   const rollback = (productId: string, qty: number) => {
@@ -141,7 +143,8 @@ export function SaleNewPage() {
                   )}
                 </div>
                 <div className="shop-card-body">
-                  {p.category && <span className="shop-card-cat">{p.category}</span>}
+                  {/* рендерим всегда — иначе карточки без категории ниже соседей в ряду */}
+                  <span className="shop-card-cat">{p.category ?? ' '}</span>
                   <span className="shop-card-name">{p.name}</span>
                   <div className="shop-card-row">
                     <span className="shop-card-price">

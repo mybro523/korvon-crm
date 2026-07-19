@@ -923,6 +923,7 @@ table.table { width: 100%; border-collapse: collapse; }
 .card { animation: kv-rise 0.3s ease-out both; }
 /* только opacity на входе — иначе transform «залипает» и ломает hover-lift кликабельных плиток */
 .stat-grid .card { animation: kv-fade-in 0.32s ease-out both; }
+.shop-grid .card { animation: kv-fade-in 0.3s ease-out both; }
 /* лёгкая каскадность плиток аналитики */
 .stat-grid > :nth-child(1) { animation-delay: 0.02s; }
 .stat-grid > :nth-child(2) { animation-delay: 0.06s; }
@@ -1009,7 +1010,11 @@ table.table { width: 100%; border-collapse: collapse; }
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 8px;
+  align-items: start; /* карточки не растягиваются по самой высокой в ряду */
+}
+@media (min-width: 480px) {
+  .shop-grid { grid-template-columns: repeat(3, 1fr); }
 }
 .shop-card {
   padding: 0;
@@ -1029,10 +1034,18 @@ table.table { width: 100%; border-collapse: collapse; }
   border-color: var(--primary-tint-2);
 }
 .shop-card:active:not(:disabled) { transform: translateY(0); }
-.shop-card.out { opacity: 0.66; cursor: not-allowed; }
+/* приглушаем фото и текст, но НЕ бейдж «Тамом шуд» — opacity родителя нельзя перебить у ребёнка */
+.shop-card.out { cursor: not-allowed; }
+.shop-card.out .shop-card-img > :not(.shop-card-out) { opacity: 0.5; filter: grayscale(0.4); }
+.shop-card.out .shop-card-body { opacity: 0.66; }
 .shop-card-img {
   position: relative;
   aspect-ratio: 1 / 1;
+  /* жёсткий квадрат: контент не может растянуть контейнер */
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+  flex: none;
   background: var(--surface-2);
   display: flex;
   align-items: center;
@@ -1040,21 +1053,23 @@ table.table { width: 100%; border-collapse: collapse; }
   color: var(--muted);
 }
 .shop-card-img img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 .shop-card-out { position: absolute; top: 8px; left: 8px; }
 .shop-card-body {
-  padding: 10px 12px 12px;
+  padding: 8px 10px 10px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
-.shop-card-cat { font-size: 11px; color: var(--muted); font-weight: 600; }
+.shop-card-cat { font-size: 10px; color: var(--muted); font-weight: 600; }
 .shop-card-name {
   font-weight: 700;
-  font-size: 13.5px;
+  font-size: 12.5px;
   line-height: 1.25;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1067,11 +1082,11 @@ table.table { width: 100%; border-collapse: collapse; }
   align-items: baseline;
   justify-content: space-between;
   gap: 6px;
-  margin-top: 2px;
+  margin-top: 1px;
 }
-.shop-card-price { font-weight: 800; font-size: 15px; color: var(--primary-700); }
-.shop-card-stock { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.shop-card-price { font-weight: 800; font-size: 13.5px; color: var(--primary-700); }
+.shop-card-stock { font-size: 10.5px; color: var(--muted); white-space: nowrap; }
 
 @media (min-width: 768px) {
-  .shop-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  .shop-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 }

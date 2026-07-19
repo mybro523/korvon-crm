@@ -17,23 +17,24 @@ import {
   analyticsApi,
   AnalyticsSummary,
   DailyPoint,
-  SellerStat,
+  InventoryStats,
   TopProduct,
 } from '@/entities/analytics/api';
 import { Detail, DetailModal } from '@/features/analytics-detail/DetailModal';
+import { extractError } from '@/shared/api/http';
 import { CHART } from '@/shared/config';
 import { useT } from '@/shared/i18n';
 import { useCachedQuery } from '@/shared/lib/cache';
 import { fmtMoney, fmtQty } from '@/shared/lib/format';
 import { PeriodKey, periodRange, userTimeZone } from '@/shared/lib/periods';
 import { Icon } from '@/shared/ui/Icon';
+import { Modal } from '@/shared/ui/Modal';
 import { AnalyticsSkeleton, EmptyState } from '@/shared/ui/misc';
 
 interface Bundle {
   summary: AnalyticsSummary;
   daily: DailyPoint[];
   top: TopProduct[];
-  bySellers: SellerStat[];
 }
 
 function ChartTooltip({
@@ -113,6 +114,8 @@ function fillDailyGaps(data: DailyPoint[], fromIso: string, toIso: string): Dail
     d = d.add(1, 'day');
     guard++;
   }
+  // диапазон длиннее лимита: НЕ обрезаем реальные продажи хвоста — показываем как есть
+  if (d.isBefore(end)) return data;
   return out.length ? out : data;
 }
 
@@ -126,17 +129,35 @@ export function AnalyticsPage() {
   const { from, to } = periodRange(period, customFrom, customTo);
   const cacheKey = `analytics:${from}:${to}`;
 
-  const { data, loading } = useCachedQuery<Bundle>(cacheKey, async () => {
+  const { data, loading, error, refetch } = useCachedQuery<Bundle>(cacheKey, async () => {
     const params = { from, to, tz: userTimeZone() };
-    const [summary, daily, top, bySellers] = await Promise.all([
+    const [summary, daily, top] = await Promise.all([
       analyticsApi.summary(params),
       analyticsApi.daily(params),
       // берём до 50 для полноты «прибыли по товарам»; график покажет топ-10
       analyticsApi.topProducts({ ...params, limit: 50 }),
-      analyticsApi.bySellers(params),
     ]);
-    return { summary, daily: fillDailyGaps(daily, from, to), top, bySellers };
+    return { summary, daily: fillDailyGaps(daily, from, to), top };
   });
+
+  // аналитика склада — от периода не зависит, отдельный кэш
+  const { data: inv, refetch: refetchInv } = useCachedQuery<InventoryStats>(
+    'analytics:inventory',
+    () => analyticsApi.inventory(),
+  );
+  const [invList, setInvList] = useState<'low' | 'out' | null>(null);
+
+  // цифры могли устареть после продаж/трансферов на других страницах — обновляем при возврате
+  useEffect(() => {
+    const onFocus = () => {
+      if (document.visibilityState !== 'visible') return;
+      refetch();
+      refetchInv();
+    };
+    document.addEventListener('visibilitychange', onFocus);
+    return () => document.removeEventListener('visibilitychange', onFocus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // закрываем модалку детализации при смене периода
   useEffect(() => {
@@ -154,7 +175,6 @@ export function AnalyticsPage() {
   const daily = data?.daily ?? [];
   const top = data?.top ?? [];
   const topChart = top.slice(0, 10); // график — топ-10; в модалку прибыли идёт весь top
-  const bySellers = data?.bySellers ?? [];
   const hasData = (summary?.salesCount ?? 0) > 0;
   const paymentData = summary
     ? [{ name: t.sales.payment, cash: summary.cashAmount, card: summary.cardAmount }]
@@ -163,6 +183,16 @@ export function AnalyticsPage() {
   const avgCheck = summary && summary.salesCount > 0 ? summary.totalAmount / summary.salesCount : 0;
   const marginPct =
     summary && summary.totalAmount > 0 ? (summary.totalProfit / summary.totalAmount) * 100 : 0;
+
+  /** штучные остатки: одна единица — просто число, разные (кг + дона) — разбивка */
+  const unitsStr = (sel: (u: { warehouse: number; shop: number }) => number) => {
+    const parts = (inv?.unitsBreakdown ?? [])
+      .map((u) => ({ unit: u.unit, qty: sel(u) }))
+      .filter((p) => p.qty > 0);
+    if (parts.length === 0) return '0';
+    if (parts.length === 1) return fmtQty(parts[0].qty);
+    return parts.map((p) => `${fmtQty(p.qty)} ${p.unit}`).join(' · ');
+  };
 
   return (
     <>
@@ -209,7 +239,9 @@ export function AnalyticsPage() {
       {loading ? (
         <AnalyticsSkeleton />
       ) : !summary ? (
-        <EmptyState />
+        <div className="card">
+          <EmptyState text={error ? extractError(error) : undefined} icon={error ? 'alert' : undefined} />
+        </div>
       ) : (
         <>
           <div className="stat-grid">
@@ -331,53 +363,6 @@ export function AnalyticsPage() {
                 </ResponsiveContainer>
               </div>
 
-              {/* продажи по продавцам — клик по бару открывает детализацию */}
-              <div className="card chart-card">
-                <h3 className="card-title">{t.analytics.bySellersChart}</h3>
-                <p className="hint-text" style={{ marginTop: -6, marginBottom: 6 }}>
-                  {t.analytics.clickHint}
-                </p>
-                <ResponsiveContainer width="100%" height={Math.max(200, bySellers.length * 46 + 40)}>
-                  <BarChart
-                    data={bySellers}
-                    layout="vertical"
-                    margin={{ top: 4, right: 78, left: 4, bottom: 4 }}
-                  >
-                    <CartesianGrid stroke={CHART.grid} horizontal={false} />
-                    <XAxis type="number" hide />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      width={92}
-                      tick={{ fill: CHART.ink, fontSize: 11 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip content={<ChartTooltip money />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
-                    <Bar
-                      dataKey="amount"
-                      name={t.analytics.totalAmount}
-                      fill={CHART.series1}
-                      barSize={18}
-                      radius={[0, 4, 4, 0]}
-                      cursor="pointer"
-                      onClick={(d: any) => {
-                        // у удалённого продавца нет id — детализацию по нему не открываем
-                        if (!d?.sellerId) return;
-                        setDetail({ kind: 'sales', title: d.name, sellerId: d.sellerId });
-                      }}
-                    >
-                      <LabelList
-                        dataKey="amount"
-                        position="right"
-                        formatter={(v: unknown) => fmtMoney(Number(v))}
-                        style={{ fill: CHART.ink, fontSize: 11.5 }}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-
               {/* топ товаров — клик по бару открывает продажи этого товара */}
               <div className="card chart-card">
                 <h3 className="card-title">{t.analytics.topProducts}</h3>
@@ -471,8 +456,169 @@ export function AnalyticsPage() {
         </>
       )}
 
+      {/* аналитика склада — текущие запасы, не зависит от периода (и от его loading) */}
+      {inv && (
+        <section>
+          <div className="page-header" style={{ marginTop: 22 }}>
+            <h2 className="page-title" style={{ fontSize: 17 }}>
+              {t.analytics.inventoryTitle}
+            </h2>
+            <p className="page-subtitle">{t.analytics.inventorySubtitle}</p>
+          </div>
+
+          <div className="stat-grid">
+            <StatTile
+              icon="box"
+              label={t.analytics.positions}
+              value={String(inv.productsCount)}
+              sub={`${t.analytics.unitsTotal}: ${unitsStr((u) => u.warehouse + u.shop)}`}
+            />
+            <StatTile
+              icon="store"
+              label={t.stock.inWarehouse}
+              value={unitsStr((u) => u.warehouse)}
+              sub={fmtMoney(inv.warehouseCost)}
+            />
+            <StatTile
+              icon="cart"
+              label={t.stock.inShop}
+              value={unitsStr((u) => u.shop)}
+              sub={fmtMoney(inv.shopCost)}
+            />
+            <StatTile
+              icon="cash"
+              label={t.analytics.inventoryCost}
+              value={fmtMoney(inv.inventoryCost)}
+            />
+            <StatTile
+              icon="chart"
+              label={t.analytics.potentialRevenue}
+              value={fmtMoney(inv.potentialRevenue)}
+              sub={`${t.analytics.potentialProfit}: ${fmtMoney(inv.potentialProfit)}`}
+            />
+            <StatTile
+              icon="alert"
+              label={t.analytics.lowStockCount}
+              value={String(inv.lowStockCount)}
+              sub={inv.lowStockCount > 0 ? t.analytics.clickHint : t.analytics.noProblems}
+              onClick={inv.lowStockCount > 0 ? () => setInvList('low') : undefined}
+            />
+            <StatTile
+              icon="alert"
+              label={t.analytics.outOfStockCount}
+              value={String(inv.outOfStockCount)}
+              sub={inv.outOfStockCount > 0 ? t.analytics.clickHint : undefined}
+              onClick={inv.outOfStockCount > 0 ? () => setInvList('out') : undefined}
+            />
+          </div>
+
+          {inv.topByValue.length > 0 && (
+            <div className="charts-grid">
+              <div className="card chart-card wide">
+                <h3 className="card-title">{t.analytics.topByValue}</h3>
+                <ResponsiveContainer
+                  width="100%"
+                  height={Math.max(160, inv.topByValue.length * 40 + 40)}
+                >
+                  <BarChart
+                    data={inv.topByValue}
+                    layout="vertical"
+                    margin={{ top: 4, right: 84, left: 4, bottom: 4 }}
+                  >
+                    <CartesianGrid stroke={CHART.grid} horizontal={false} />
+                    <XAxis type="number" hide />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={104}
+                      tick={{ fill: CHART.ink, fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip content={<ChartTooltip money />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
+                    <Bar
+                      dataKey="value"
+                      name={t.analytics.inventoryCost}
+                      fill={CHART.series1}
+                      barSize={16}
+                      radius={[0, 4, 4, 0]}
+                    >
+                      <LabelList
+                        dataKey="value"
+                        position="right"
+                        formatter={(v: unknown) => fmtMoney(Number(v))}
+                        style={{ fill: CHART.ink, fontSize: 11.5 }}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
       {detail && (
         <DetailModal detail={detail} from={from} to={to} top={top} onClose={() => setDetail(null)} />
+      )}
+
+      {invList && inv && (
+        <Modal
+          title={invList === 'low' ? t.analytics.lowStockCount : t.analytics.outOfStockCount}
+          onClose={() => setInvList(null)}
+          width={480}
+        >
+          {invList === 'low' ? (
+            inv.lowStockItems.length === 0 ? (
+              <EmptyState text={t.analytics.noProblems} icon="box" />
+            ) : (
+              <>
+                <div className="detail-list">
+                  {inv.lowStockItems.map((p) => (
+                    <div key={p.id} className="detail-row">
+                      <div className="detail-row-main">
+                        <div className="detail-row-title">{p.name}</div>
+                        <div className="detail-row-sub">
+                          {t.stock.inWarehouse}: {fmtQty(p.warehouseQty)} {p.unit}
+                        </div>
+                      </div>
+                      <div className="detail-row-amount" style={{ color: 'var(--warn, #b45309)' }}>
+                        {t.stock.inShop}: {fmtQty(p.shopQty)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {inv.lowStockCount > inv.lowStockItems.length && (
+                  <p className="hint-text">
+                    {t.analytics.shownFirst}: {inv.lowStockItems.length} / {inv.lowStockCount}
+                  </p>
+                )}
+              </>
+            )
+          ) : inv.outOfStockItems.length === 0 ? (
+            <EmptyState text={t.analytics.noProblems} icon="box" />
+          ) : (
+            <>
+              <div className="detail-list">
+                {inv.outOfStockItems.map((p) => (
+                  <div key={p.id} className="detail-row">
+                    <div className="detail-row-main">
+                      <div className="detail-row-title">{p.name}</div>
+                    </div>
+                    <div className="detail-row-amount" style={{ color: 'var(--danger, #b91c1c)' }}>
+                      {t.warehouse.outOfStock}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {inv.outOfStockCount > inv.outOfStockItems.length && (
+                <p className="hint-text">
+                  {t.analytics.shownFirst}: {inv.outOfStockItems.length} / {inv.outOfStockCount}
+                </p>
+              )}
+            </>
+          )}
+        </Modal>
       )}
     </>
   );

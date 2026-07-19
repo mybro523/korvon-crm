@@ -30,12 +30,30 @@ export interface TopProduct {
   count: number;
 }
 
-export interface SellerStat {
-  sellerId: string | null;
-  name: string;
-  count: number;
-  amount: number;
-  profit: number;
+export interface InventoryStats {
+  productsCount: number;
+  warehouseUnits: number;
+  shopUnits: number;
+  totalUnits: number;
+  inventoryCost: number;
+  warehouseCost: number;
+  shopCost: number;
+  potentialRevenue: number;
+  potentialProfit: number;
+  lowStockCount: number;
+  outOfStockCount: number;
+  /** штучные остатки по каждой единице измерения (кг и дона складывать нельзя) */
+  unitsBreakdown: { unit: string; warehouse: number; shop: number }[];
+  topByValue: { name: string; unit: string; units: number; value: number }[];
+  lowStockItems: {
+    id: string;
+    name: string;
+    unit: string;
+    shopQty: number;
+    warehouseQty: number;
+    threshold: number;
+  }[];
+  outOfStockItems: { id: string; name: string; unit: string }[];
 }
 
 export interface AnalyticsParams {
@@ -52,6 +70,5 @@ export const analyticsApi = {
     http.get<DailyPoint[]>('/analytics/daily', { params }).then((r) => r.data),
   topProducts: (params: AnalyticsParams) =>
     http.get<TopProduct[]>('/analytics/top-products', { params }).then((r) => r.data),
-  bySellers: (params: AnalyticsParams) =>
-    http.get<SellerStat[]>('/analytics/by-sellers', { params }).then((r) => r.data),
+  inventory: () => http.get<InventoryStats>('/analytics/inventory').then((r) => r.data),
 };

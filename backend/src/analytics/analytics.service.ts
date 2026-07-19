@@ -97,6 +97,96 @@ export class AnalyticsService {
     }));
   }
 
+  /** аналитика склада: текущее состояние запасов (не зависит от периода) */
+  async inventory() {
+    const [row] = await this.dataSource.query(
+      `SELECT
+        COUNT(*)::int AS "productsCount",
+        COALESCE(SUM(p.quantity), 0) AS "warehouseUnits",
+        COALESCE(SUM(p."shopQty"), 0) AS "shopUnits",
+        COALESCE(SUM(p."costPrice" * (p.quantity + p."shopQty")), 0) AS "inventoryCost",
+        COALESCE(SUM(p."costPrice" * p.quantity), 0) AS "warehouseCost",
+        COALESCE(SUM(p."costPrice" * p."shopQty"), 0) AS "shopCost",
+        COALESCE(SUM(p."sellPrice" * (p.quantity + p."shopQty")), 0) AS "potentialRevenue",
+        COUNT(*) FILTER (WHERE p."shopQty" <= p."lowStockThreshold" AND p.quantity + p."shopQty" > 0)::int AS "lowStockCount",
+        COUNT(*) FILTER (WHERE p.quantity + p."shopQty" <= 0)::int AS "outOfStockCount"
+      FROM products p`,
+    );
+
+    const topByValue = await this.dataSource.query(
+      `SELECT
+        p.name, p.unit,
+        (p.quantity + p."shopQty") AS units,
+        p."costPrice" * (p.quantity + p."shopQty") AS value
+      FROM products p
+      WHERE p.quantity + p."shopQty" > 0
+      ORDER BY value DESC
+      LIMIT 10`,
+    );
+
+    const lowStockItems = await this.dataSource.query(
+      `SELECT p.id, p.name, p.unit, p."shopQty", p.quantity, p."lowStockThreshold"
+      FROM products p
+      WHERE p."shopQty" <= p."lowStockThreshold" AND p.quantity + p."shopQty" > 0
+      ORDER BY p."shopQty" ASC
+      LIMIT 50`,
+    );
+
+    const outOfStockItems = await this.dataSource.query(
+      `SELECT p.id, p.name, p.unit
+      FROM products p
+      WHERE p.quantity + p."shopQty" <= 0
+      ORDER BY p.name ASC
+      LIMIT 50`,
+    );
+
+    // штучные остатки нельзя складывать между разными единицами (кг + дона) — отдаём разбивку
+    const unitsBreakdown = await this.dataSource.query(
+      `SELECT p.unit,
+        COALESCE(SUM(p.quantity), 0) AS warehouse,
+        COALESCE(SUM(p."shopQty"), 0) AS shop
+      FROM products p
+      GROUP BY p.unit
+      ORDER BY SUM(p.quantity + p."shopQty") DESC`,
+    );
+
+    const inventoryCost = num(row.inventoryCost);
+    const potentialRevenue = num(row.potentialRevenue);
+    return {
+      productsCount: row.productsCount,
+      warehouseUnits: num(row.warehouseUnits),
+      shopUnits: num(row.shopUnits),
+      totalUnits: num(row.warehouseUnits) + num(row.shopUnits),
+      inventoryCost,
+      warehouseCost: num(row.warehouseCost),
+      shopCost: num(row.shopCost),
+      potentialRevenue,
+      potentialProfit: potentialRevenue - inventoryCost,
+      lowStockCount: row.lowStockCount,
+      outOfStockCount: row.outOfStockCount,
+      unitsBreakdown: unitsBreakdown.map((r: any) => ({
+        unit: r.unit,
+        warehouse: num(r.warehouse),
+        shop: num(r.shop),
+      })),
+      topByValue: topByValue.map((r: any) => ({
+        name: r.name,
+        unit: r.unit,
+        units: num(r.units),
+        value: num(r.value),
+      })),
+      lowStockItems: lowStockItems.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        unit: r.unit,
+        shopQty: num(r.shopQty),
+        warehouseQty: num(r.quantity),
+        threshold: num(r.lowStockThreshold),
+      })),
+      outOfStockItems: outOfStockItems.map((r: any) => ({ id: r.id, name: r.name, unit: r.unit })),
+    };
+  }
+
   /** топ продавцов по сумме продаж */
   async bySellers(q: AnalyticsQueryDto) {
     const { where, params } = this.buildWhere(q);

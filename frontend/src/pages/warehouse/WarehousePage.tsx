@@ -5,7 +5,7 @@ import { Product } from '@/entities/product/types';
 import { ProductFormModal } from '@/features/product-form/ProductFormModal';
 import { extractError } from '@/shared/api/http';
 import { useT } from '@/shared/i18n';
-import { useCachedQuery } from '@/shared/lib/cache';
+import { invalidateByPrefix, useCachedQuery } from '@/shared/lib/cache';
 import { mergeCategories } from '@/shared/lib/categories';
 import { downloadFile } from '@/shared/lib/download';
 import { fmtMoney, fmtQty } from '@/shared/lib/format';
@@ -46,6 +46,7 @@ export function WarehousePage() {
     const removed = deleting;
     const idx = (products ?? []).findIndex((p) => p.id === removed.id);
     mutate((list) => (list ?? []).filter((p) => p.id !== removed.id)); // оптимистично убираем
+    invalidateByPrefix('analytics:'); // запасы изменились
     setDeleting(null);
     productsApi
       .remove(removed.id)
@@ -233,6 +234,7 @@ export function WarehousePage() {
           onDone={() => {
             refetch(); // текущий список; другие фильтры ревалидируются при заходе (SWR)
             cats.refetch();
+            invalidateByPrefix('analytics:'); // количество/цены товаров влияют на аналитику склада
           }}
         />
       )}

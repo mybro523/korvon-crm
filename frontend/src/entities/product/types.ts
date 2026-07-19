@@ -5,7 +5,12 @@ export interface Product {
   unit: string;
   costPrice: number;
   sellPrice: number;
+  /** остаток на складе */
   quantity: number;
+  /** остаток в точке продажи */
+  shopQty: number;
+  lowStockThreshold: number;
+  lowStockNotified: boolean;
   description: string | null;
   arrivalDate: string;
   hasPhoto: boolean;
@@ -21,6 +26,7 @@ export interface ProductPayload {
   costPrice?: number;
   sellPrice?: number;
   quantity?: number;
+  lowStockThreshold?: number;
   description?: string;
   arrivalDate?: string;
   /** data-URL для замены, '' — удалить, undefined — не менять */

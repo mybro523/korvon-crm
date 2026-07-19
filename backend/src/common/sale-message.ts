@@ -30,6 +30,22 @@ export const SALE_TYPE_LABEL: Record<string, string> = {
   RETAIL: 'Чакана',
 };
 
+/** предупреждение «мало товара в точке» (таджикский); html=true — для Telegram */
+export function buildLowStockMessage(
+  product: { name: string; unit: string; shopQty: number },
+  html: boolean,
+): string {
+  const esc = html ? escapeHtml : (s: string) => s;
+  const b = html ? (s: string) => `<b>${s}</b>` : (s: string) => s;
+  const e = (emoji: string) => (html ? `${emoji} ` : '');
+  return [
+    `${e('⚠️')}${b('Огоҳӣ: мол кам монд!')}`,
+    `${e('📦')}Мол: ${esc(product.name)}`,
+    `${e('🔢')}Дар нуқтаи фурӯш: ${fmtQty(product.shopQty)} ${esc(product.unit)}`,
+    `${e('🚚')}Аз анбор биёред.`,
+  ].join('\n');
+}
+
 /** текст уведомления о продаже (таджикский); html=true — для Telegram (с эмодзи) */
 export function buildSaleMessage(sale: Sale, html: boolean): string {
   const esc = html ? escapeHtml : (s: string) => s;

@@ -43,15 +43,23 @@ export function WarehousePage() {
 
   const onDelete = () => {
     if (!deleting) return;
-    const id = deleting.id;
-    const prev = mutate((list) => (list ?? []).filter((p) => p.id !== id)); // оптимистично убираем
+    const removed = deleting;
+    const idx = (products ?? []).findIndex((p) => p.id === removed.id);
+    mutate((list) => (list ?? []).filter((p) => p.id !== removed.id)); // оптимистично убираем
     setDeleting(null);
     productsApi
-      .remove(id)
+      .remove(removed.id)
       .then(() => toast.success(t.common.deleted))
       // другие фильтры/поиски ревалидируются сами при следующем заходе (SWR)
       .catch((e) => {
-        mutate(() => prev ?? []); // откат
+        // дельта-откат: возвращаем только удалённый товар, не затирая другие изменения
+        mutate((list) => {
+          const cur = list ?? [];
+          if (cur.some((p) => p.id === removed.id)) return cur;
+          const next = [...cur];
+          next.splice(Math.min(idx < 0 ? cur.length : idx, cur.length), 0, removed);
+          return next;
+        });
         toast.error(extractError(e));
       });
   };
@@ -68,7 +76,7 @@ export function WarehousePage() {
   };
 
   const list = products ?? [];
-  const totalValue = list.reduce((acc, p) => acc + p.costPrice * p.quantity, 0);
+  const totalValue = list.reduce((acc, p) => acc + p.costPrice * (p.quantity + p.shopQty), 0);
 
   return (
     <>
@@ -134,8 +142,8 @@ export function WarehousePage() {
                   <th>{t.warehouse.category}</th>
                   <th className="num">{t.warehouse.costPrice}</th>
                   <th className="num">{t.warehouse.sellPrice}</th>
-                  <th className="num">{t.warehouse.quantity}</th>
-                  <th className="num">{t.warehouse.totalValue}</th>
+                  <th className="num">{t.stock.inWarehouse}</th>
+                  <th className="num">{t.stock.inShop}</th>
                   <th>{t.users.status}</th>
                   <th />
                 </tr>
@@ -156,15 +164,19 @@ export function WarehousePage() {
                     <td className="num" data-label={t.warehouse.sellPrice}>
                       {fmtMoney(p.sellPrice)}
                     </td>
-                    <td className="num" data-label={t.warehouse.quantity}>
+                    <td className="num" data-label={t.stock.inWarehouse}>
                       {fmtQty(p.quantity)} {p.unit}
                     </td>
-                    <td className="num" data-label={t.warehouse.totalValue}>
-                      {fmtMoney(p.costPrice * p.quantity)}
+                    <td className="num" data-label={t.stock.inShop}>
+                      {fmtQty(p.shopQty)} {p.unit}
                     </td>
                     <td data-label={t.users.status}>
-                      {p.quantity <= 0 ? (
+                      {p.quantity + p.shopQty <= 0 ? (
                         <Badge variant="danger">{t.warehouse.outOfStock}</Badge>
+                      ) : p.shopQty <= p.lowStockThreshold ? (
+                        <Badge variant="warning">
+                          <Icon name="alert" size={12} /> {t.stock.lowStock}
+                        </Badge>
                       ) : (
                         <Badge variant="success">{t.warehouse.inStock}</Badge>
                       )}
@@ -201,10 +213,11 @@ export function WarehousePage() {
                   <td colSpan={4} data-label={t.common.total}>
                     {list.length} {t.warehouse.productsCount}
                   </td>
-                  <td className="num" data-label={t.warehouse.warehouseValue}>
+                  {/* сумма склад+точка — накрывает обе колонки остатков */}
+                  <td colSpan={2} className="num" data-label={t.warehouse.totalStockValue}>
                     {fmtMoney(totalValue)}
                   </td>
-                  <td colSpan={3} className="tfoot-filler" />
+                  <td colSpan={2} className="tfoot-filler" />
                 </tr>
               </tfoot>
             </table>

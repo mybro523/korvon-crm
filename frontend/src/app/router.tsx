@@ -16,6 +16,7 @@ const SaleNewPage = lazy(() =>
 const WarehousePage = lazy(() =>
   import('@/pages/warehouse/WarehousePage').then((m) => ({ default: m.WarehousePage })),
 );
+const StockPage = lazy(() => import('@/pages/stock/StockPage').then((m) => ({ default: m.StockPage })));
 const UsersPage = lazy(() => import('@/pages/users/UsersPage').then((m) => ({ default: m.UsersPage })));
 const NotificationsPage = lazy(() =>
   import('@/pages/notifications/NotificationsPage').then((m) => ({ default: m.NotificationsPage })),
@@ -75,6 +76,14 @@ export function AppRouter() {
             element={
               <RequireOwner>
                 <Lazy><WarehousePage /></Lazy>
+              </RequireOwner>
+            }
+          />
+          <Route
+            path="/stock"
+            element={
+              <RequireOwner>
+                <Lazy><StockPage /></Lazy>
               </RequireOwner>
             }
           />

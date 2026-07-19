@@ -95,26 +95,39 @@ export function useCachedQuery<T>(
 
   useEffect(() => {
     if (!enabled) return;
-    const myId = (fetchSeq.get(key) ?? 0) + 1;
-    fetchSeq.set(key, myId);
-    const versionAtStart = mutationVersion.get(key) ?? 0;
-    setError(null);
-    setRefreshing(true);
-    fetcherRef.current()
-      .then((data) => {
-        if (fetchSeq.get(key) !== myId) return; // есть более свежий запрос — игнорируем
-        // если во время запроса была оптимистичная мутация — не затираем её
-        if ((mutationVersion.get(key) ?? 0) === versionAtStart) {
-          setCache(key, data);
-        }
-        setError(null);
-      })
-      .catch((e) => {
-        if (fetchSeq.get(key) === myId) setError(e);
-      })
-      .finally(() => {
-        if (fetchSeq.get(key) === myId) setRefreshing(false);
-      });
+    let cancelled = false;
+
+    const attempt = () => {
+      const myId = (fetchSeq.get(key) ?? 0) + 1;
+      fetchSeq.set(key, myId);
+      const versionAtStart = mutationVersion.get(key) ?? 0;
+      setError(null);
+      setRefreshing(true);
+      fetcherRef.current()
+        .then((data) => {
+          if (cancelled || fetchSeq.get(key) !== myId) return; // есть более свежий запрос
+          if ((mutationVersion.get(key) ?? 0) === versionAtStart) {
+            setCache(key, data);
+            setError(null);
+          } else {
+            // во время запроса была оптимистичная мутация — ответ устарел;
+            // не затираем её, а перезапрашиваем свежие данные
+            attempt();
+            return;
+          }
+        })
+        .catch((e) => {
+          if (!cancelled && fetchSeq.get(key) === myId) setError(e);
+        })
+        .finally(() => {
+          if (!cancelled && fetchSeq.get(key) === myId) setRefreshing(false);
+        });
+    };
+
+    attempt();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, enabled]);
 
@@ -126,20 +139,24 @@ export function useCachedQuery<T>(
     refreshing,
     error,
     refetch: () => {
-      const myId = (fetchSeq.get(key) ?? 0) + 1;
-      fetchSeq.set(key, myId);
-      const versionAtStart = mutationVersion.get(key) ?? 0;
-      setRefreshing(true);
-      fetcherRef
-        .current()
-        .then((d) => {
-          if (fetchSeq.get(key) !== myId) return;
-          if ((mutationVersion.get(key) ?? 0) === versionAtStart) setCache(key, d);
-        })
-        .catch(() => {})
-        .finally(() => {
-          if (fetchSeq.get(key) === myId) setRefreshing(false);
-        });
+      const run = () => {
+        const myId = (fetchSeq.get(key) ?? 0) + 1;
+        fetchSeq.set(key, myId);
+        const versionAtStart = mutationVersion.get(key) ?? 0;
+        setRefreshing(true);
+        fetcherRef
+          .current()
+          .then((d) => {
+            if (fetchSeq.get(key) !== myId) return;
+            if ((mutationVersion.get(key) ?? 0) === versionAtStart) setCache(key, d);
+            else run(); // ответ устарел из-за мутации — перезапрашиваем
+          })
+          .catch(() => {})
+          .finally(() => {
+            if (fetchSeq.get(key) === myId) setRefreshing(false);
+          });
+      };
+      run();
     },
     mutate: (updater) => mutateCache<T>(key, updater),
   };

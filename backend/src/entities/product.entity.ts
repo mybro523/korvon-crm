@@ -28,9 +28,21 @@ export class Product {
   @Column({ type: 'numeric', precision: 14, scale: 2, default: 0, transformer: decimalTransformer })
   sellPrice: number;
 
-  /** остаток на складе */
+  /** остаток на СКЛАДЕ (основное хранилище; имя колонки сохранено для миграции данных) */
   @Column({ type: 'numeric', precision: 14, scale: 3, default: 0, transformer: decimalTransformer })
   quantity: number;
+
+  /** остаток в ТОЧКЕ ПРОДАЖИ (продажа списывает отсюда; пополняется переносом со склада) */
+  @Column({ type: 'numeric', precision: 14, scale: 3, default: 0, transformer: decimalTransformer })
+  shopQty: number;
+
+  /** порог оповещения «мало товара в точке» */
+  @Column({ type: 'numeric', precision: 14, scale: 3, default: 15, transformer: decimalTransformer })
+  lowStockThreshold: number;
+
+  /** флаг «оповещение уже отправлено» — чтобы не спамить после каждой продажи */
+  @Column({ default: false })
+  lowStockNotified: boolean;
 
   @Column({ type: 'text', nullable: true })
   description: string | null;

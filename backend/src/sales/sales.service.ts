@@ -7,12 +7,12 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { EPS, round2, round3 } from '../common/numbers';
-import { buildSaleMessage } from '../common/sale-message';
+import { buildLowStockMessage, buildSaleMessage } from '../common/sale-message';
 import { normalizeFrom, normalizeTo } from '../common/tz';
 import { Notification, Product, Sale, User } from '../entities';
 import { SETTING_KEYS, SettingsService } from '../settings/settings.service';
 import { TelegramService } from '../settings/telegram.service';
-import { CreateSaleDto } from './dto/create-sale.dto';
+import { CreateSaleDto, MAX_MONEY, MSG_TOO_BIG } from './dto/create-sale.dto';
 import { QuerySalesDto } from './dto/query-sales.dto';
 
 @Injectable()
@@ -41,20 +41,41 @@ export class SalesService {
       unitPrice = round2(dto.unitPrice!);
       totalAmount = round2(unitPrice * qty);
     }
+    // вычисленные значения тоже не должны превышать предел numeric(14,2) — иначе 500 от БД
+    if (unitPrice > MAX_MONEY || totalAmount > MAX_MONEY) {
+      throw new BadRequestException(MSG_TOO_BIG);
+    }
+
+    let lowStockAlertHtml: string | null = null;
 
     const sale = await this.dataSource.transaction(async (em) => {
-      // продажа всегда со склада; блокировка защищает от гонок при параллельных продажах
+      // продажа идёт из ТОЧКИ ПРОДАЖИ; блокировка защищает от гонок при параллельных продажах
       const product = await em.findOne(Product, {
         where: { id: dto.productId },
         lock: { mode: 'pessimistic_write' },
       });
       if (!product) throw new NotFoundException('Мол ёфт нашуд');
-      if (product.quantity + EPS < qty) {
+      if (product.shopQty + EPS < qty) {
         throw new BadRequestException(
-          `Дар анбор танҳо ${product.quantity} ${product.unit} мавҷуд аст`,
+          `Дар нуқтаи фурӯш танҳо ${product.shopQty} ${product.unit} мавҷуд аст`,
         );
       }
-      product.quantity = round3(product.quantity - qty);
+      product.shopQty = round3(product.shopQty - qty);
+
+      // порог «мало товара»: оповещаем один раз при пересечении
+      if (
+        product.shopQty <= product.lowStockThreshold + EPS &&
+        !product.lowStockNotified
+      ) {
+        product.lowStockNotified = true;
+        lowStockAlertHtml = buildLowStockMessage(product, true);
+        await em.save(
+          em.create(Notification, {
+            message: buildLowStockMessage(product, false),
+            saleId: null,
+          }),
+        );
+      }
       await em.save(product);
 
       const saleEntity = em.create(Sale, {
@@ -87,8 +108,27 @@ export class SalesService {
     this.notifyTelegram(sale).catch((e) => {
       this.logger.warn(`Огоҳинома ба Telegram нарафт: ${e?.message ?? e}`);
     });
+    if (lowStockAlertHtml) {
+      // предупреждение о низком остатке — владельцам в Telegram
+      this.notifyOwnersText(lowStockAlertHtml).catch((e) => {
+        this.logger.warn(`Low-stock Telegram нарафт: ${e?.message ?? e}`);
+      });
+    }
 
     return this.stripCost(sale);
+  }
+
+  /** произвольный текст всем подключённым владельцам (+ legacy chat id) */
+  private async notifyOwnersText(text: string): Promise<void> {
+    const chatIds = new Set<string>();
+    const owners = await this.usersRepo.find({ where: { role: 'OWNER', isActive: true } });
+    for (const o of owners) if (o.telegramChatId) chatIds.add(o.telegramChatId);
+    const legacy = (await this.settingsService.get(SETTING_KEYS.TELEGRAM_CHAT_ID)).trim();
+    if (legacy) chatIds.add(legacy);
+    for (const chatId of chatIds) {
+      const r = await this.telegramService.sendToChat(chatId, text);
+      if (!r.ok) this.logger.warn(`Telegram → ${chatId}: ${r.error}`);
+    }
   }
 
   /** уведомления: всем подключённым владельцам, продавцу — чек, плюс legacy chat id */
@@ -164,11 +204,10 @@ export class SalesService {
     return qb;
   }
 
-  /** товары со склада, доступные для продажи (остаток > 0) */
+  /** витрина: все товары; available = остаток в точке продажи */
   async availableProducts() {
     const products = await this.productsRepo
       .createQueryBuilder('p')
-      .where('p.quantity > 0')
       .orderBy('p.name', 'ASC')
       .getMany();
     return products.map((p) => ({
@@ -176,7 +215,8 @@ export class SalesService {
       name: p.name,
       category: p.category,
       unit: p.unit,
-      available: p.quantity,
+      available: p.shopQty,
+      warehouseQty: p.quantity,
       sellPrice: p.sellPrice,
       hasPhoto: p.hasPhoto,
       photoRev: p.photoRev,

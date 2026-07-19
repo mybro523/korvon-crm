@@ -29,7 +29,10 @@ export interface AvailableProduct {
   name: string;
   category: string | null;
   unit: string;
+  /** остаток в точке продажи */
   available: number;
+  /** остаток на складе (для подсказки) */
+  warehouseQty: number;
   sellPrice: number;
   hasPhoto: boolean;
   photoRev: number;

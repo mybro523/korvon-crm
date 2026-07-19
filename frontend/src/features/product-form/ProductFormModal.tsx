@@ -31,6 +31,9 @@ export function ProductFormModal({ product, categories, onClose, onDone }: Props
   const [costPrice, setCostPrice] = useState(product ? String(product.costPrice) : '');
   const [sellPrice, setSellPrice] = useState(product ? String(product.sellPrice) : '');
   const [quantity, setQuantity] = useState(product ? String(product.quantity) : '');
+  const [lowThreshold, setLowThreshold] = useState(
+    product ? String(product.lowStockThreshold) : '15',
+  );
   const [description, setDescription] = useState(product?.description ?? '');
   const [arrivalDate, setArrivalDate] = useState(
     product?.arrivalDate ?? dayjs().format('YYYY-MM-DD'),
@@ -71,6 +74,7 @@ export function ProductFormModal({ product, categories, onClose, onDone }: Props
       unit: unit.trim(),
       costPrice: parseFloat(costPrice) || 0,
       sellPrice: parseFloat(sellPrice) || 0,
+      lowStockThreshold: parseFloat(lowThreshold) || 0,
       description: description.trim(),
       arrivalDate,
       ...(photo !== undefined ? { photo } : {}),
@@ -157,7 +161,7 @@ export function ProductFormModal({ product, categories, onClose, onDone }: Props
             required
           />
           <Input
-            label={t.warehouse.quantity}
+            label={`${t.warehouse.quantity} (${t.stock.inWarehouse})`}
             type="number"
             min="0"
             step="0.001"
@@ -166,12 +170,23 @@ export function ProductFormModal({ product, categories, onClose, onDone }: Props
             required
           />
           <Input
-            label={t.warehouse.arrivalDate}
-            type="date"
-            value={arrivalDate}
-            onChange={(e) => setArrivalDate(e.target.value)}
+            label={t.stock.lowThreshold}
+            type="number"
+            min="0"
+            step="0.001"
+            value={lowThreshold}
+            onChange={(e) => setLowThreshold(e.target.value)}
             required
           />
+          <div className="full">
+            <Input
+              label={t.warehouse.arrivalDate}
+              type="date"
+              value={arrivalDate}
+              onChange={(e) => setArrivalDate(e.target.value)}
+              required
+            />
+          </div>
           <div className="full field">
             <label className="field-label">{t.warehouse.description}</label>
             <textarea

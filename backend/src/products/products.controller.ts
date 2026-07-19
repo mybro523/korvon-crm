@@ -10,12 +10,23 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Type } from 'class-transformer';
+import { IsNumber, Max, Min } from 'class-validator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { MAX_QTY, MSG_TOO_BIG } from '../sales/dto/create-sale.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductsService } from './products.service';
+
+class TransferDto {
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 3 }, { message: 'Миқдор нодуруст аст' })
+  @Min(0.001, { message: 'Миқдор бояд аз сифр зиёд бошад' })
+  @Max(MAX_QTY, { message: MSG_TOO_BIG })
+  quantity: number;
+}
 
 @Controller('products')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -46,5 +57,11 @@ export class ProductsController {
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.productsService.remove(id);
+  }
+
+  /** перенос со склада в точку продажи */
+  @Post(':id/transfer')
+  transfer(@Param('id', ParseUUIDPipe) id: string, @Body() dto: TransferDto) {
+    return this.productsService.transferToShop(id, dto.quantity);
   }
 }

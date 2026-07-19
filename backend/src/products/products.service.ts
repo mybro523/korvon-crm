@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { round2, round3 } from '../common/numbers';
+import { DataSource, Repository } from 'typeorm';
+import { EPS, round2, round3 } from '../common/numbers';
 import { Product } from '../entities';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -10,6 +10,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 export class ProductsService {
   constructor(
     @InjectRepository(Product) private readonly productsRepo: Repository<Product>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findAll(search?: string, category?: string) {
@@ -40,7 +41,10 @@ export class ProductsService {
       unit: dto.unit.trim(),
       costPrice: round2(dto.costPrice),
       sellPrice: round2(dto.sellPrice),
+      // новый товар поступает на СКЛАД; в точку привозят переносом
       quantity: round3(dto.quantity),
+      shopQty: 0,
+      lowStockThreshold: dto.lowStockThreshold !== undefined ? round3(dto.lowStockThreshold) : 15,
       description: dto.description?.trim() || null,
       arrivalDate: dto.arrivalDate.slice(0, 10),
     });
@@ -50,21 +54,33 @@ export class ProductsService {
   }
 
   async update(id: string, dto: UpdateProductDto) {
-    const product = await this.productsRepo.findOne({ where: { id } });
-    if (!product) throw new NotFoundException('Мол ёфт нашуд');
+    // транзакция + блокировка: PATCH не должен затирать конкурентные продажи/переносы
+    // (без лока save() записал бы устаревшие shopQty/quantity/lowStockNotified)
+    return this.dataSource.transaction(async (em) => {
+      const product = await em.findOne(Product, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!product) throw new NotFoundException('Мол ёфт нашуд');
 
-    if (dto.name !== undefined) product.name = dto.name.trim();
-    if (dto.category !== undefined) product.category = dto.category?.trim() || null;
-    if (dto.unit !== undefined) product.unit = dto.unit.trim();
-    if (dto.costPrice !== undefined) product.costPrice = round2(dto.costPrice);
-    if (dto.sellPrice !== undefined) product.sellPrice = round2(dto.sellPrice);
-    if (dto.quantity !== undefined) product.quantity = round3(dto.quantity);
-    if (dto.description !== undefined) product.description = dto.description?.trim() || null;
-    if (dto.arrivalDate !== undefined) product.arrivalDate = dto.arrivalDate.slice(0, 10);
-    this.applyPhoto(product, dto.photo);
+      if (dto.name !== undefined) product.name = dto.name.trim();
+      if (dto.category !== undefined) product.category = dto.category?.trim() || null;
+      if (dto.unit !== undefined) product.unit = dto.unit.trim();
+      if (dto.costPrice !== undefined) product.costPrice = round2(dto.costPrice);
+      if (dto.sellPrice !== undefined) product.sellPrice = round2(dto.sellPrice);
+      if (dto.quantity !== undefined) product.quantity = round3(dto.quantity);
+      if (dto.lowStockThreshold !== undefined) {
+        product.lowStockThreshold = round3(dto.lowStockThreshold);
+        // порог изменился — переоцениваем флаг оповещения (shopQty здесь свежий, под локом)
+        if (product.shopQty > product.lowStockThreshold) product.lowStockNotified = false;
+      }
+      if (dto.description !== undefined) product.description = dto.description?.trim() || null;
+      if (dto.arrivalDate !== undefined) product.arrivalDate = dto.arrivalDate.slice(0, 10);
+      this.applyPhoto(product, dto.photo);
 
-    const saved = await this.productsRepo.save(product);
-    return this.stripPhoto(saved);
+      const saved = await em.save(product);
+      return this.stripPhoto(saved);
+    });
   }
 
   /** dto.photo: undefined — не трогать; '' — удалить; data:image/...;base64,... — заменить */
@@ -113,5 +129,32 @@ export class ProductsService {
     if (!product) throw new NotFoundException('Мол ёфт нашуд');
     await this.productsRepo.remove(product);
     return { success: true };
+  }
+
+  /** перенос со склада в точку продажи: склад списывается автоматически, точка пополняется */
+  async transferToShop(id: string, qty: number) {
+    const q = round3(qty);
+    if (q <= 0) throw new BadRequestException('Миқдор бояд аз сифр зиёд бошад');
+
+    return this.dataSource.transaction(async (em) => {
+      const product = await em.findOne(Product, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!product) throw new NotFoundException('Мол ёфт нашуд');
+      if (product.quantity + EPS < q) {
+        throw new BadRequestException(
+          `Дар анбор танҳо ${product.quantity} ${product.unit} мавҷуд аст`,
+        );
+      }
+
+      product.quantity = round3(product.quantity - q);
+      product.shopQty = round3(product.shopQty + q);
+      // точка пополнена выше порога — оповещение снова активно
+      if (product.shopQty > product.lowStockThreshold) product.lowStockNotified = false;
+
+      const saved = await em.save(product);
+      return this.stripPhoto(saved);
+    });
   }
 }

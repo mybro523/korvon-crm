@@ -52,6 +52,7 @@ export function AppLayout() {
         { to: '/sales', label: t.nav.sales, icon: 'cart' },
         { to: '/sales/new', label: t.nav.newSale, icon: 'plus' },
         { to: '/warehouse', label: t.nav.warehouse, icon: 'box' },
+        { to: '/stock', label: t.nav.stock, icon: 'store' },
         { to: '/users', label: t.nav.users, icon: 'users' },
         { to: '/notifications', label: t.nav.notifications, icon: 'bell', badge: unread },
         { to: '/settings', label: t.nav.settings, icon: 'settings' },
@@ -74,6 +75,7 @@ export function AppLayout() {
 
   const moreItems: NavEntry[] = isOwner
     ? [
+        { to: '/stock', label: t.nav.stock, icon: 'store' },
         { to: '/users', label: t.nav.users, icon: 'users' },
         { to: '/notifications', label: t.nav.notifications, icon: 'bell', badge: unread },
         { to: '/settings', label: t.nav.settings, icon: 'settings' },

@@ -47,6 +47,14 @@ export class CreateProductDto {
   @MaxLength(2000, { message: 'Тавсиф хеле дароз аст' })
   description?: string;
 
+  /** порог оповещения «мало товара в точке» */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 3 }, { message: 'Ҳадди огоҳӣ нодуруст аст' })
+  @Min(0, { message: 'Ҳадди огоҳӣ манфӣ буда наметавонад' })
+  @Max(MAX_QTY, { message: MSG_TOO_BIG })
+  lowStockThreshold?: number;
+
   @IsDateString({}, { message: 'Санаи воридот нодуруст аст' })
   arrivalDate: string;
 

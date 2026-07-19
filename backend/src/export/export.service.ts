@@ -45,6 +45,7 @@ export class ExportService {
     if (q.search) {
       qb.andWhere('s.productName ILIKE :search', { search: `%${q.search.trim()}%` });
     }
+    if (q.productName) qb.andWhere('s.productName = :pn', { pn: q.productName });
     const sales = await qb.take(100_000).getMany();
 
     const wb = new ExcelJS.Workbook();
@@ -105,7 +106,8 @@ export class ExportService {
       { header: 'Категория', key: 'category', width: 18 },
       { header: 'Воҳид', key: 'unit', width: 10 },
       { header: 'Арзиши аслӣ (сомонӣ)', key: 'cost', width: 18 },
-      { header: 'Миқдор', key: 'quantity', width: 12 },
+      { header: 'Дар анбор', key: 'quantity', width: 12 },
+      { header: 'Дар нуқта', key: 'shopQty', width: 12 },
       { header: 'Арзиши умумӣ (сомонӣ)', key: 'totalCost', width: 20 },
       { header: 'Санаи воридот', key: 'arrival', width: 15 },
     ];
@@ -119,14 +121,17 @@ export class ExportService {
         unit: p.unit,
         cost: p.costPrice,
         quantity: p.quantity,
-        totalCost: round2(p.costPrice * p.quantity),
+        shopQty: p.shopQty,
+        totalCost: round2(p.costPrice * (p.quantity + p.shopQty)),
         arrival: `${d}.${m}.${y}`,
       });
     });
 
     const totalRow = ws.addRow({
       name: 'ҲАМАГӢ:',
-      totalCost: round2(products.reduce((acc, p) => acc + p.costPrice * p.quantity, 0)),
+      totalCost: round2(
+        products.reduce((acc, p) => acc + p.costPrice * (p.quantity + p.shopQty), 0),
+      ),
     });
     totalRow.font = { bold: true };
 

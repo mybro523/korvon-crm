@@ -12,4 +12,7 @@ export const productsApi = {
   update: (id: string, payload: ProductPayload) =>
     http.patch<Product>(`/products/${id}`, payload).then((r) => r.data),
   remove: (id: string) => http.delete(`/products/${id}`).then((r) => r.data),
+  /** перенос со склада в точку продажи */
+  transfer: (id: string, quantity: number) =>
+    http.post<Product>(`/products/${id}/transfer`, { quantity }).then((r) => r.data),
 };

@@ -6,6 +6,7 @@ export const t = {
   nav: {
     analytics: 'Таҳлил',
     warehouse: 'Молҳо',
+    stock: 'Анбор',
     sales: 'Фурӯшҳо',
     newSale: 'Фурӯши нав',
     users: 'Корбарон',
@@ -79,6 +80,7 @@ export const t = {
     arrivalDate: 'Санаи воридот',
     totalValue: 'Арзиши умумӣ',
     warehouseValue: 'Арзиши анбор',
+    totalStockValue: 'Арзиши ҳамаи захира',
     outOfStock: 'Тамом шуд',
     lowStock: 'Кам мондааст',
     inStock: 'Мавҷуд',
@@ -92,6 +94,19 @@ export const t = {
     changePhoto: 'Иваз кардан',
     removePhoto: 'Нест кардан',
     photoTooBig: 'Сурат хеле калон аст',
+  },
+
+  stock: {
+    title: 'Анбор',
+    subtitle: 'Захираи асосӣ — аз ин ҷо мол ба нуқтаи фурӯш бурда мешавад',
+    inWarehouse: 'Дар анбор',
+    inShop: 'Дар нуқта',
+    bringToShop: 'Ба нуқта бурдан',
+    bringTitle: 'Бурдан ба нуқтаи фурӯш',
+    lowThreshold: 'Ҳадди огоҳӣ (кам монд)',
+    lowStock: 'Кам монд',
+    emptyWarehouse: 'Анбор холӣ аст',
+    notEnoughWarehouse: 'Дар анбор кофӣ нест! Дастрас:',
   },
 
   points: {
@@ -155,6 +170,7 @@ export const t = {
     from: 'Аз',
     to: 'То',
     notEnough: 'Миқдори кофӣ нест! Дастрас:',
+    pickProduct: 'Молро интихоб кунед — ба карточка пахш кунед',
     noPointAssigned:
       'Ба шумо нуқтаи фурӯш вобаста карда нашудааст. Ба соҳиби система муроҷиат кунед.',
     dateTime: 'Сана ва вақт',

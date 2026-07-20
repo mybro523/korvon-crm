@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
 import { IsOptional, IsString } from 'class-validator';
+import { DataSource } from 'typeorm';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -25,7 +26,30 @@ export class SettingsController {
   constructor(
     private readonly settingsService: SettingsService,
     private readonly telegramService: TelegramService,
+    private readonly dataSource: DataSource,
   ) {}
+
+  /** ВРЕМЕННО: полная очистка данных перед вводом реальных.
+      Удаляет товары/продажи/уведомления/тг-коды и всех, кроме владельцев.
+      Настройки (токен бота) и аккаунты OWNER остаются. */
+  @Post('wipe-data')
+  async wipeData(@Body() body: { confirm?: string }) {
+    if (body?.confirm !== 'WIPE-ALL-DATA') {
+      throw new BadRequestException('Тасдиқ нодуруст аст');
+    }
+    await this.dataSource.query(
+      'TRUNCATE "sales", "notifications", "telegram_link_codes", "products" CASCADE',
+    );
+    const del = await this.dataSource.query(`DELETE FROM users WHERE role <> 'OWNER'`);
+    const counts = await this.dataSource.query(
+      `SELECT
+        (SELECT COUNT(*)::int FROM products) AS products,
+        (SELECT COUNT(*)::int FROM sales) AS sales,
+        (SELECT COUNT(*)::int FROM notifications) AS notifications,
+        (SELECT COUNT(*)::int FROM users) AS users`,
+    );
+    return { ok: true, deletedSellers: del[1] ?? 0, counts: counts[0] };
+  }
 
   @Get()
   getAll() {

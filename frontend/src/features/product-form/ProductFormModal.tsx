@@ -20,9 +20,17 @@ interface Props {
   onClose: () => void;
   /** вызывается после фонового сохранения — родитель обновляет список */
   onDone: () => void;
+  /** мгновенная правка товара в списке (до ответа сервера) — только при редактировании */
+  onOptimistic?: (id: string, patch: (prev: Product) => Partial<Product>) => void;
 }
 
-export function ProductFormModal({ product, categories, onClose, onDone }: Props) {
+export function ProductFormModal({
+  product,
+  categories,
+  onClose,
+  onDone,
+  onOptimistic,
+}: Props) {
   const t = useT();
   const toast = useToast();
   const [name, setName] = useState(product?.name ?? '');
@@ -30,6 +38,7 @@ export function ProductFormModal({ product, categories, onClose, onDone }: Props
   const [unit, setUnit] = useState(product?.unit ?? t.warehouse.unitPlaceholder);
   const [costPrice, setCostPrice] = useState(product ? String(product.costPrice) : '');
   const [quantity, setQuantity] = useState(product ? String(product.quantity) : '');
+  const [shopQty, setShopQty] = useState(product ? String(product.shopQty) : '0');
   const [lowThreshold, setLowThreshold] = useState(
     product ? String(product.lowStockThreshold) : '15',
   );
@@ -67,6 +76,7 @@ export function ProductFormModal({ product, categories, onClose, onDone }: Props
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     const qtyNum = parseFloat(quantity) || 0;
+    const shopNum = parseFloat(shopQty) || 0;
     const payload = {
       name: name.trim(),
       category: category.trim(),
@@ -77,23 +87,63 @@ export function ProductFormModal({ product, categories, onClose, onDone }: Props
       arrivalDate,
       ...(photo !== undefined ? { photo } : {}),
     };
+    // остатки отправляем только если реально изменили — иначе затрём параллельные продажи;
+    // expected* — то, что видели в форме: сервер отклонит правку, если остаток уже изменился
+    const qtyChanged = product ? qtyNum !== product.quantity : true;
+    const shopChanged = product ? shopNum !== product.shopQty : true;
+    const qtyPatch = product
+      ? {
+          ...(qtyChanged ? { quantity: qtyNum, expectedQuantity: product.quantity } : {}),
+          ...(shopChanged ? { shopQty: shopNum, expectedShopQty: product.shopQty } : {}),
+        }
+      : { quantity: qtyNum, shopQty: shopNum };
+
     // оптимистично: закрываем модалку сразу, запрос уходит в фоне
     onClose();
+    let rollback: (() => void) | undefined;
+    if (product) {
+      // список и суммы («стоимость запасов», аналитика) обновляются мгновенно
+      const before = product;
+      const dQty = qtyChanged ? qtyNum - before.quantity : 0;
+      const dShop = shopChanged ? shopNum - before.shopQty : 0;
+      onOptimistic?.(product.id, () => ({
+        name: payload.name,
+        category: payload.category || null,
+        unit: payload.unit,
+        costPrice: payload.costPrice,
+        lowStockThreshold: payload.lowStockThreshold,
+        description: payload.description || null,
+        arrivalDate: payload.arrivalDate,
+        ...(qtyChanged ? { quantity: qtyNum } : {}),
+        ...(shopChanged ? { shopQty: shopNum } : {}),
+      }));
+      // правка не сохранилась — возвращаем как было: остатки по дельте (не затирая
+      // параллельные продажи), остальные поля — прежними значениями
+      rollback = () =>
+        onOptimistic?.(before.id, (prev) => ({
+          name: before.name,
+          category: before.category,
+          unit: before.unit,
+          costPrice: before.costPrice,
+          lowStockThreshold: before.lowStockThreshold,
+          description: before.description,
+          arrivalDate: before.arrivalDate,
+          ...(dQty ? { quantity: prev.quantity - dQty } : {}),
+          ...(dShop ? { shopQty: prev.shopQty - dShop } : {}),
+        }));
+    }
     const req = product
-      ? productsApi.update(product.id, {
-          ...payload,
-          // остаток отправляем только если реально изменили (иначе затрём продажи)
-          ...(qtyNum !== product.quantity ? { quantity: qtyNum } : {}),
-        })
-      : productsApi.create({ ...payload, quantity: qtyNum });
+      ? productsApi.update(product.id, { ...payload, ...qtyPatch })
+      : productsApi.create({ ...payload, ...qtyPatch });
     req
       .then(() => {
         toast.success(t.common.saved);
         onDone();
       })
       .catch((err) => {
+        rollback?.(); // иначе на экране остались бы несохранённые остатки и суммы
         toast.error(extractError(err));
-        onDone(); // всё равно синхронизируем список с сервером
+        onDone(); // и синхронизируемся с сервером
       });
   };
 
@@ -150,6 +200,16 @@ export function ProductFormModal({ product, categories, onClose, onDone }: Props
             required
           />
           <Input
+            label={t.stock.lowThreshold}
+            type="number"
+            min="0"
+            step="0.001"
+            value={lowThreshold}
+            onChange={(e) => setLowThreshold(e.target.value)}
+            required
+          />
+          {/* остатки — парой в одной строке; правка «в точке» исправляет учёт, склад не трогает */}
+          <Input
             label={`${t.warehouse.quantity} (${t.stock.inWarehouse})`}
             type="number"
             min="0"
@@ -159,22 +219,24 @@ export function ProductFormModal({ product, categories, onClose, onDone }: Props
             required
           />
           <Input
-            label={t.stock.lowThreshold}
+            label={`${t.warehouse.quantity} (${t.stock.inShop})`}
             type="number"
             min="0"
             step="0.001"
-            value={lowThreshold}
-            onChange={(e) => setLowThreshold(e.target.value)}
+            value={shopQty}
+            onChange={(e) => setShopQty(e.target.value)}
             required
           />
-          {/* полуширина: встаёт в пару к «Порогу оповещения», иначе дырка в 2-колоночной сетке */}
-          <Input
-            label={t.warehouse.arrivalDate}
-            type="date"
-            value={arrivalDate}
-            onChange={(e) => setArrivalDate(e.target.value)}
-            required
-          />
+          {/* на всю ширину: полуширинных полей чётное число, иначе в сетке останется дырка */}
+          <div className="full">
+            <Input
+              label={t.warehouse.arrivalDate}
+              type="date"
+              value={arrivalDate}
+              onChange={(e) => setArrivalDate(e.target.value)}
+              required
+            />
+          </div>
           <div className="full field">
             <label className="field-label">{t.warehouse.description}</label>
             <textarea

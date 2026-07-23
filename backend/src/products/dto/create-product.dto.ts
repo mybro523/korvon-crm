@@ -36,6 +36,14 @@ export class CreateProductDto {
   @Max(MAX_QTY, { message: MSG_TOO_BIG })
   quantity: number;
 
+  /** остаток сразу в точке продажи (по умолчанию 0 — всё поступает на склад) */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 3 }, { message: 'Миқдор дар нуқтаи фурӯш нодуруст аст' })
+  @Min(0, { message: 'Миқдор манфӣ буда наметавонад' })
+  @Max(MAX_QTY, { message: MSG_TOO_BIG })
+  shopQty?: number;
+
   @IsOptional()
   @IsString({ message: 'Тавсиф нодуруст аст' })
   @MaxLength(2000, { message: 'Тавсиф хеле дароз аст' })

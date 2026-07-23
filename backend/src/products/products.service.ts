@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { EPS, round2, round3 } from '../common/numbers';
@@ -40,9 +45,9 @@ export class ProductsService {
       category: dto.category?.trim() || null,
       unit: dto.unit.trim(),
       costPrice: round2(dto.costPrice),
-      // новый товар поступает на СКЛАД; в точку привозят переносом
+      // основной остаток — на СКЛАДЕ; часть можно сразу указать в точке продажи
       quantity: round3(dto.quantity),
-      shopQty: 0,
+      shopQty: dto.shopQty !== undefined ? round3(dto.shopQty) : 0,
       lowStockThreshold: dto.lowStockThreshold !== undefined ? round3(dto.lowStockThreshold) : 15,
       description: dto.description?.trim() || null,
       arrivalDate: dto.arrivalDate.slice(0, 10),
@@ -66,12 +71,36 @@ export class ProductsService {
       if (dto.category !== undefined) product.category = dto.category?.trim() || null;
       if (dto.unit !== undefined) product.unit = dto.unit.trim();
       if (dto.costPrice !== undefined) product.costPrice = round2(dto.costPrice);
-      if (dto.quantity !== undefined) product.quantity = round3(dto.quantity);
+      // остаток мог измениться, пока форма была открыта (продажа/перенос) — тогда правку
+      // отклоняем: иначе абсолютное значение из формы затёрло бы эти движения
+      if (dto.quantity !== undefined) {
+        if (
+          dto.expectedQuantity !== undefined &&
+          Math.abs(product.quantity - dto.expectedQuantity) > EPS
+        ) {
+          throw new ConflictException(`Бақияи анбор тағйир ёфт (ҳозир: ${product.quantity})`);
+        }
+        product.quantity = round3(dto.quantity);
+      }
+      // ручная правка остатка в точке — это ИСПРАВЛЕНИЕ учёта (склад не трогаем)
+      if (dto.shopQty !== undefined) {
+        if (
+          dto.expectedShopQty !== undefined &&
+          Math.abs(product.shopQty - dto.expectedShopQty) > EPS
+        ) {
+          throw new ConflictException(
+            `Бақияи нуқтаи фурӯш тағйир ёфт (ҳозир: ${product.shopQty})`,
+          );
+        }
+        product.shopQty = round3(dto.shopQty);
+      }
       if (dto.lowStockThreshold !== undefined) {
         product.lowStockThreshold = round3(dto.lowStockThreshold);
-        // порог изменился — переоцениваем флаг оповещения (shopQty здесь свежий, под локом)
-        if (product.shopQty > product.lowStockThreshold) product.lowStockNotified = false;
       }
+      // остаток стал выше порога (правкой точки или порога) — снимаем флаг «уже оповестили»,
+      // чтобы следующее пересечение порога снова прислало уведомление.
+      // Само оповещение при ручной правке НЕ шлём — иначе спам при вводе данных.
+      if (product.shopQty > product.lowStockThreshold) product.lowStockNotified = false;
       if (dto.description !== undefined) product.description = dto.description?.trim() || null;
       if (dto.arrivalDate !== undefined) product.arrivalDate = dto.arrivalDate.slice(0, 10);
       this.applyPhoto(product, dto.photo);

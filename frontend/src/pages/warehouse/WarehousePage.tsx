@@ -41,6 +41,12 @@ export function WarehousePage() {
   const cats = useCachedQuery<string[]>('categories', () => productsApi.categories());
   const categories = cats.data ?? [];
 
+  /** правка товара видна сразу: строка списка и итоговая стоимость запасов */
+  const applyEdit = (id: string, patch: (prev: Product) => Partial<Product>) => {
+    mutate((list) => (list ?? []).map((p) => (p.id === id ? { ...p, ...patch(p) } : p)));
+    invalidateByPrefix('analytics:'); // суммы аналитики пересчитаются при заходе
+  };
+
   const onDelete = () => {
     if (!deleting) return;
     const removed = deleting;
@@ -227,6 +233,7 @@ export function WarehousePage() {
           product={editing}
           categories={categories}
           onClose={() => setFormOpen(false)}
+          onOptimistic={applyEdit}
           onDone={() => {
             refetch(); // текущий список; другие фильтры ревалидируются при заходе (SWR)
             cats.refetch();

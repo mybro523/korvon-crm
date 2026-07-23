@@ -40,6 +40,26 @@ export class UpdateProductDto {
   @Max(MAX_QTY, { message: MSG_TOO_BIG })
   quantity?: number;
 
+  /** остаток в точке продажи — ручное исправление учёта (склад не меняется) */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 3 }, { message: 'Миқдор дар нуқтаи фурӯш нодуруст аст' })
+  @Min(0, { message: 'Миқдор манфӣ буда наметавонад' })
+  @Max(MAX_QTY, { message: MSG_TOO_BIG })
+  shopQty?: number;
+
+  /* Остатки, которые клиент видел в форме. Если за время редактирования прошла продажа
+     или перенос, сервер отклонит правку — иначе абсолютное значение затёрло бы её. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 3 }, { message: 'Миқдор нодуруст аст' })
+  expectedQuantity?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 3 }, { message: 'Миқдор дар нуқтаи фурӯш нодуруст аст' })
+  expectedShopQty?: number;
+
   @IsOptional()
   @IsString({ message: 'Тавсиф нодуруст аст' })
   @MaxLength(2000, { message: 'Тавсиф хеле дароз аст' })

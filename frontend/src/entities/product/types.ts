@@ -24,6 +24,10 @@ export interface ProductPayload {
   unit?: string;
   costPrice?: number;
   quantity?: number;
+  shopQty?: number;
+  /** остатки, которые видел клиент — сервер отклонит правку, если они уже изменились */
+  expectedQuantity?: number;
+  expectedShopQty?: number;
   lowStockThreshold?: number;
   description?: string;
   arrivalDate?: string;

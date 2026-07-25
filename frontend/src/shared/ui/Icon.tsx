@@ -26,6 +26,7 @@ import {
   TbSettings,
   TbTrash,
   TbUsers,
+  TbWallet,
   TbX,
 } from 'react-icons/tb';
 
@@ -57,6 +58,7 @@ const ICONS: Record<string, IconType> = {
   menu: TbLayoutGrid,
   telegram: TbBrandTelegram,
   info: TbInfoCircle,
+  expense: TbWallet,
 };
 
 interface IconProps {

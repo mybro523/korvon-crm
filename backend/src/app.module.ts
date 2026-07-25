@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
 import { ALL_ENTITIES } from './entities';
+import { ExpensesModule } from './expenses/expenses.module';
 import { ExportModule } from './export/export.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ProductsModule } from './products/products.module';
@@ -47,6 +48,7 @@ import { UsersModule } from './users/users.module';
     SettingsModule,
     TelegramModule,
     ExportModule,
+    ExpensesModule,
   ],
   providers: [SeedService],
 })

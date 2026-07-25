@@ -316,6 +316,17 @@ export function AnalyticsPage() {
                   : undefined
               }
             />
+            <StatTile
+              icon="expense"
+              label={t.analytics.expenses}
+              value={fmtMoney(summary.expensesTotal)}
+              sub={`${summary.expensesCount} ${t.expenses.count}`}
+              onClick={
+                summary.expensesCount > 0
+                  ? () => setDetail({ kind: 'expenses', title: t.analytics.expenses })
+                  : undefined
+              }
+            />
           </div>
 
           {!hasData ? (

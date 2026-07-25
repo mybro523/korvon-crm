@@ -13,6 +13,8 @@ export interface AnalyticsSummary {
   wholesaleCount: number;
   retailCount: number;
   totalProfit: number;
+  expensesTotal: number;
+  expensesCount: number;
 }
 
 export interface DailyPoint {

@@ -9,6 +9,7 @@ export const t = {
     stock: 'Анбор',
     sales: 'Фурӯшҳо',
     newSale: 'Фурӯши нав',
+    expenses: 'Хароҷот',
     users: 'Корбарон',
     notifications: 'Огоҳиномаҳо',
     settings: 'Танзимот',
@@ -209,6 +210,22 @@ export const t = {
     profitByProduct: 'Фоида аз рӯи молҳо',
     clickHint: 'Барои тафсилот зер кунед',
     allSales: 'Ҳамаи фурӯшҳо',
+    expenses: 'Хароҷот',
+  },
+
+  expenses: {
+    title: 'Хароҷот',
+    subtitle: 'Хароҷоти мағоза — иҷора, музд, харид ва ғайра',
+    add: 'Иловаи хароҷот',
+    amount: 'Маблағ',
+    amountPlaceholder: 'мисол: 500',
+    comment: 'Шарҳ',
+    commentPlaceholder: 'мисол: иҷораи мағоза барои моҳи июл',
+    author: 'Илова кард',
+    count: 'хароҷот',
+    empty: 'Ҳанӯз хароҷот нест',
+    deleteTitle: 'Нест кардани хароҷот',
+    deleteConfirm: 'Ин хароҷотро нест мекунед? Ин амал бебозгашт аст.',
   },
 
   users: {

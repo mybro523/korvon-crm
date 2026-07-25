@@ -53,6 +53,7 @@ export function AppLayout() {
         { to: '/sales/new', label: t.nav.newSale, icon: 'plus' },
         { to: '/warehouse', label: t.nav.warehouse, icon: 'box' },
         { to: '/stock', label: t.nav.stock, icon: 'store' },
+        { to: '/expenses', label: t.nav.expenses, icon: 'expense' },
         { to: '/users', label: t.nav.users, icon: 'users' },
         { to: '/notifications', label: t.nav.notifications, icon: 'bell', badge: unread },
         { to: '/settings', label: t.nav.settings, icon: 'settings' },
@@ -60,6 +61,7 @@ export function AppLayout() {
     : [
         { to: '/sales/new', label: t.nav.newSale, icon: 'plus' },
         { to: '/sales', label: t.nav.sales, icon: 'cart' },
+        { to: '/expenses', label: t.nav.expenses, icon: 'expense' },
       ];
 
   // нижняя навигация (мобильная): вкладки + FAB по центру
@@ -69,13 +71,15 @@ export function AppLayout() {
         { to: '/sales', label: t.nav.sales, icon: 'cart' },
       ]
     : [{ to: '/sales', label: t.nav.sales, icon: 'cart' }];
+  // у продавца в нижней навигации место справа свободно — отдаём его «Расходу»
   const tabsRight: NavEntry[] = isOwner
     ? [{ to: '/warehouse', label: t.nav.warehouse, icon: 'box' }]
-    : [];
+    : [{ to: '/expenses', label: t.nav.expenses, icon: 'expense' }];
 
   const moreItems: NavEntry[] = isOwner
     ? [
         { to: '/stock', label: t.nav.stock, icon: 'store' },
+        { to: '/expenses', label: t.nav.expenses, icon: 'expense' },
         { to: '/users', label: t.nav.users, icon: 'users' },
         { to: '/notifications', label: t.nav.notifications, icon: 'bell', badge: unread },
         { to: '/settings', label: t.nav.settings, icon: 'settings' },

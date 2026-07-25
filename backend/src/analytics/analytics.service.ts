@@ -35,6 +35,17 @@ export class AnalyticsService {
       WHERE ${where}`,
       params,
     );
+
+    // расходы за тот же период (отдельная таблица, те же границы дат params[0..1])
+    const [exp] = await this.dataSource.query(
+      `SELECT
+        COUNT(*)::int AS "expensesCount",
+        COALESCE(SUM(e.amount), 0) AS "expensesTotal"
+      FROM expenses e
+      WHERE e."createdAt" >= $1 AND e."createdAt" <= $2`,
+      [params[0], params[1]],
+    );
+
     return {
       salesCount: row.salesCount,
       totalAmount: num(row.totalAmount),
@@ -48,6 +59,8 @@ export class AnalyticsService {
       wholesaleCount: row.wholesaleCount,
       retailCount: row.retailCount,
       totalProfit: num(row.totalProfit),
+      expensesCount: exp.expensesCount,
+      expensesTotal: num(exp.expensesTotal),
     };
   }
 

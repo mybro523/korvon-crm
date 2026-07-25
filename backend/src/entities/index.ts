@@ -4,6 +4,7 @@ export { Sale, SaleType, PaymentMethod } from './sale.entity';
 export { Notification } from './notification.entity';
 export { Setting } from './setting.entity';
 export { TelegramLinkCode } from './telegram-link-code.entity';
+export { Expense } from './expense.entity';
 
 import { User } from './user.entity';
 import { Product } from './product.entity';
@@ -11,5 +12,14 @@ import { Sale } from './sale.entity';
 import { Notification } from './notification.entity';
 import { Setting } from './setting.entity';
 import { TelegramLinkCode } from './telegram-link-code.entity';
+import { Expense } from './expense.entity';
 
-export const ALL_ENTITIES = [User, Product, Sale, Notification, Setting, TelegramLinkCode];
+export const ALL_ENTITIES = [
+  User,
+  Product,
+  Sale,
+  Notification,
+  Setting,
+  TelegramLinkCode,
+  Expense,
+];

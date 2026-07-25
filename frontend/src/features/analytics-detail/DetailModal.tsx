@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { TopProduct } from '@/entities/analytics/api';
+import { expensesApi } from '@/entities/expense/api';
+import { Expense } from '@/entities/expense/types';
 import { salesApi } from '@/entities/sale/api';
 import { Sale } from '@/entities/sale/types';
 import { extractError } from '@/shared/api/http';
@@ -9,7 +11,7 @@ import { Icon } from '@/shared/ui/Icon';
 import { Modal } from '@/shared/ui/Modal';
 import { EmptyState, TableSkeleton } from '@/shared/ui/misc';
 
-/** тип детализации — либо список продаж, либо товарная разбивка */
+/** тип детализации — список продаж, товарная разбивка или расходы */
 export type Detail =
   | {
       kind: 'sales';
@@ -18,7 +20,8 @@ export type Detail =
       sellerId?: string;
       productName?: string;
     }
-  | { kind: 'products'; title: string; mode: 'quantity' | 'profit' };
+  | { kind: 'products'; title: string; mode: 'quantity' | 'profit' }
+  | { kind: 'expenses'; title: string };
 
 interface Props {
   detail: Detail;
@@ -63,6 +66,8 @@ export function DetailModal({ detail, from, to, top, onClose }: Props) {
     <Modal title={detail.title} onClose={onClose} width={560}>
       {detail.kind === 'products' ? (
         <ProductsDetail top={top} mode={detail.mode} />
+      ) : detail.kind === 'expenses' ? (
+        <ExpensesDetail from={from} to={to} />
       ) : error ? (
         <EmptyState text={error} icon="alert" />
       ) : sales === null ? (
@@ -127,5 +132,62 @@ function ProductsDetail({ top, mode }: { top: TopProduct[]; mode: 'quantity' | '
         </div>
       ))}
     </div>
+  );
+}
+
+/** детализация расходов за выбранный период */
+function ExpensesDetail({ from, to }: { from: string; to: string }) {
+  const t = useT();
+  const [items, setItems] = useState<Expense[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [sum, setSum] = useState(0);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let ignore = false;
+    expensesApi
+      .list({ from, to, limit: 100 })
+      .then((r) => {
+        if (ignore) return;
+        setItems(r.items);
+        setTotal(r.total);
+        setSum(r.totalAmount);
+      })
+      .catch((e) => !ignore && setError(extractError(e)));
+    return () => {
+      ignore = true;
+    };
+  }, [from, to]);
+
+  if (error) return <EmptyState text={error} icon="alert" />;
+  if (items === null) return <TableSkeleton rows={5} />;
+  if (items.length === 0) return <EmptyState text={t.analytics.noData} icon="expense" />;
+
+  return (
+    <>
+      <div className="detail-summary">
+        <div className="detail-stat">
+          <div className="detail-stat-label">{t.expenses.count}</div>
+          <div className="detail-stat-value">{total}</div>
+        </div>
+        <div className="detail-stat">
+          <div className="detail-stat-label">{t.analytics.totalAmount}</div>
+          <div className="detail-stat-value">{fmtMoney(sum)}</div>
+        </div>
+      </div>
+      <div className="detail-list">
+        {items.map((e) => (
+          <div key={e.id} className="detail-row">
+            <div className="detail-row-main">
+              <div className="detail-row-title">{e.comment}</div>
+              <div className="detail-row-sub">
+                {fmtDateTime(e.createdAt)} · {e.createdByName}
+              </div>
+            </div>
+            <div className="detail-row-amount">{fmtMoney(e.amount)}</div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }

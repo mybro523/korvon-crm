@@ -17,6 +17,9 @@ const WarehousePage = lazy(() =>
   import('@/pages/warehouse/WarehousePage').then((m) => ({ default: m.WarehousePage })),
 );
 const StockPage = lazy(() => import('@/pages/stock/StockPage').then((m) => ({ default: m.StockPage })));
+const ExpensesPage = lazy(() =>
+  import('@/pages/expenses/ExpensesPage').then((m) => ({ default: m.ExpensesPage })),
+);
 const UsersPage = lazy(() => import('@/pages/users/UsersPage').then((m) => ({ default: m.UsersPage })));
 const NotificationsPage = lazy(() =>
   import('@/pages/notifications/NotificationsPage').then((m) => ({ default: m.NotificationsPage })),
@@ -63,6 +66,8 @@ export function AppRouter() {
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/sales" element={<Lazy><SalesPage /></Lazy>} />
           <Route path="/sales/new" element={<Lazy><SaleNewPage /></Lazy>} />
+          {/* расходы доступны и владельцу, и продавцам */}
+          <Route path="/expenses" element={<Lazy><ExpensesPage /></Lazy>} />
           <Route
             path="/analytics"
             element={
